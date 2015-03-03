@@ -12,16 +12,13 @@ void swap(int * Arr, const int i,const int j)
         Arr[j] = buf;
     }
 }
-FILE * initFile()
+FILE * initFile(char * file_name)
 {
-   FILE * fp = fopen("out.csv","r+");
+   FILE * fp = fopen(file_name,"a+");
    if(!fp)
    {
-        if(!(fp =  fopen("out.csv","w")))
-        {
             printf("FILE ERROR");
             exit(1);
-        }
    }
 }
 int * create_shuffle(const int length)
@@ -78,40 +75,27 @@ float InitLineRand(int * Arr,int * Shuffle, int LENGTH)
 }
 int main(int argc,char ** argv)
 {
-    long long LENGTH; /*LENGTH OF ARAY*/
+    int LENGTH; /*LENGTH OF ARAY*/
     int * Array;
-    int M = 10000; // param to gallop
+    int M; // param to gallop
     int startTime;
     float timeIn[3];
-    FILE * fp = initFile();
-    for(LENGTH = 100000;LENGTH <= 30000000;LENGTH+=700000)
+    if(argc != 4)
     {
-        printf("%d\n",LENGTH/100000);
-        srand(time(NULL)); /* update random()*/
-  /*  if(argc == 3)
-    {
-        LENGTH = atoi(argv[1]);
-        M = atoi(argv[2]);
+        printf("error_number of arguments");
+        exit(1);
     }
-    else
-    {
-        printf(" Enter LENGTH of array and M to galop: ");
-        scanf("%d%d",&LENGTH,&M);
-    }*/
-        startTime = clock();
-        assert(Array = (int*)malloc(sizeof(int)*LENGTH));
-        timeIn[0] = InitLine(Array,LENGTH,create_shuffle(LENGTH));
-        timeIn[1] = InitLineM(M,Array,LENGTH,create_shuffle(LENGTH));
-        timeIn[2] = InitLineRand(Array,create_shuffle(LENGTH),LENGTH);
-
-   /*     printf("\n %.3f %.3f %.3f ",timeIn[0],timeIn[1],timeIn[2]);
-        printf("\ntime: %f", ((float)(clock() - startTime)/CLOCKS_PER_SEC));
-        printf("\n*\n");
-    */
-    fprintf(fp,"%d;%.3f;%.3f;%.3f;\n",LENGTH,timeIn[0],timeIn[1],timeIn[2]);
+    FILE * fp = initFile(argv[1]);
+    LENGTH = atoi(argv[2]);
+    M = atoi(argv[3]);
+    srand(time(NULL)); /* update random()*/
+    startTime = clock();
+    assert(Array = (int*)malloc(sizeof(int)*LENGTH));
+    timeIn[0] = InitLine(Array,LENGTH,create_shuffle(LENGTH));
+    timeIn[1] = InitLineM(M,Array,LENGTH,create_shuffle(LENGTH));
+    timeIn[2] = InitLineRand(Array,create_shuffle(LENGTH),LENGTH);
+    fprintf(fp,"%d;%d;%.3f;%.3f;%.3f;\n",LENGTH,M,timeIn[0],timeIn[1],timeIn[2]);
     free(Array);
-    }
-    fprintf(fp,"Line;Gallop;Random;");
     fclose(fp);
     return 0;
 }
