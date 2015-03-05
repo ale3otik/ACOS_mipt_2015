@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <assert.h>
+#include <string.h>
 void swap(int * Arr, const int i,const int j)
 {
     int buf;
@@ -82,7 +83,10 @@ int main(int argc,char ** argv)
     int M; /*param to gallop*/
     float timeIn[3];
     FILE * fp;
-    if(argc != 4)
+    timeIn[0] = -1;
+    timeIn[1] = -1;
+    timeIn[2] = -1;
+    if(argc < 4 || argc > 5)
     {
         printf("error_number of arguments");
         exit(1);
@@ -93,10 +97,20 @@ int main(int argc,char ** argv)
     srand(time(NULL)); /* update random()*/
     assert(Array = (int*)malloc(sizeof(int)*length));
     Array = create_shuffle(length);
-    timeIn[0] = InitLine(Array,length);
+    if(argc != 5 || (argc == 5 && strcmp(argv[4],"gallop") != 0))
+    {
+        timeIn[0] = InitLine(Array,length);
+        timeIn[2] = InitLineRand(Array,create_shuffle(length),length);
+    }
     timeIn[1] = InitLineM(M,Array,length);
-    timeIn[2] = InitLineRand(Array,create_shuffle(length),length);
-    fprintf(fp,"%d;%d;%.3f;%.3f;%.3f;\n",length,M,timeIn[0],timeIn[1],timeIn[2]);
+    if(argc != 5 || (argc == 5 && strcmp(argv[4],"gallop") != 0))
+    {
+        fprintf(fp,"%d;%d;%.3f;%.3f;%.3f;\n",length,M,timeIn[0],timeIn[1],timeIn[2]);
+    }
+    else
+    {
+        fprintf(fp,"%d;%d;%.3f;\n",length,M,timeIn[1]);
+    }
     free(Array);
     fclose(fp);
     return 0;
