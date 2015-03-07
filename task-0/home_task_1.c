@@ -3,6 +3,7 @@
 #include <time.h>
 #include <assert.h>
 #include <string.h>
+int returnedval = 0;
 void swap(int ** Arr, const int i,const int j)
 {
     int * buf;
@@ -89,6 +90,7 @@ float CountLine(int ** index_arr, const int length)
     }
     timeInit = clock() - timeInit;
     free(index_arr);
+    returnedval += summ;
     return timeInit/(float)(CLOCKS_PER_SEC);
 }
 int main(int argc,char ** argv)
@@ -127,5 +129,5 @@ int main(int argc,char ** argv)
     }
     free(Values);
     fclose(fp);
-    return 0;
+    return returnedval;
 }
