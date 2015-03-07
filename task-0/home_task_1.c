@@ -3,9 +3,9 @@
 #include <time.h>
 #include <assert.h>
 #include <string.h>
-void swap(int * Arr, const int i,const int j)
+void swap(int ** Arr, const int i,const int j)
 {
-    int buf;
+    int * buf;
     if(i != j)
     {
         buf = Arr[i];
@@ -23,66 +23,82 @@ FILE * initFile(char * file_name)
    }
    return fp;
 }
-int * create_shuffle(const int length)
+int * getValues(int length)
 {
-    int * Arr;
-    int i,j;
-    assert(Arr = (int*)malloc(sizeof(int)*length));
-    for(i = 0;i<length;i++)
+    int * Values;
+    int i;
+    if(!(Values = (int*)malloc(length* sizeof(int))))
     {
-        Arr[i] = i;
+        printf("error valuse malloc");
+        exit(1);
     }
-    for(i = length - 1; i>=0;--i)
+    for(i = 0;i<length;++i)
     {
-        j = rand() % (i+1);
-        swap(Arr,i,j);
+        Values[i] = rand()% 100 + 100;
     }
-    return Arr;
+    return Values;
 }
-float InitLine(int * Array, const int length)
+int ** create_shuffle(int * Values,const int length,int param)
+{
+    int ** index_arr;
+    int i,j,k=0;
+    int check = 0;
+    if(!(index_arr = (int**)malloc(sizeof(int*)*length)))
+    {
+        printf("error shuffle malloc");
+        exit(1);
+    }
+    switch (param)
+    {
+        case 0: 
+            check = 1; /*random activate*/
+            param = 1;
+        default:
+            for(i = 0;i<param;++i)
+                {
+                    for(j = i;j<length;j+=param)
+                    {
+                        index_arr[k] = &Values[j];
+                        ++k;
+                    }
+                }
+            if(k != length)
+            {
+                printf("error index of index_arr %d\n",k);
+                exit(1);
+            }
+    }
+    if(check == 1)
+    {
+        for(i = length - 1; i>=0;--i)
+        {
+            j = rand() % (i+1);
+            swap(index_arr,i,j);
+        }
+    }
+    return index_arr;
+}
+float CountLine(int ** index_arr, const int length)
 {
     long timeInit = clock();
     int i;
     long summ = 0;
     for(i = 0; i< length; ++i)
     {
-        summ += Array[i];
+        summ += **(index_arr + i);
     }
-   return (clock() - timeInit)/ (float)(CLOCKS_PER_SEC);
-}
-float InitLineM(const int M, int * Array, const int length)
-{
-    int start = clock();
-    int i,j=0;
-    long summ=0;
-    for(j = 0;j<M;++j)
-    {
-        for(i = j;i<length;i+= M)
-        {
-            summ += Array[i];
-        }
-    }
-    return (clock() - start)/ (float)(CLOCKS_PER_SEC);
-}
-float InitLineRand(int * Arr,int * Shuffle, const int length)
-{
-    int i;
-    long start = clock();
-    long summ = 0;
-    for(i = 0;i<length;++i)
-    {
-        summ += Arr[Shuffle[i]];
-    }
-    free(Shuffle);
-    return (clock() - start)/ (float)(CLOCKS_PER_SEC);
+    timeInit = clock() - timeInit;
+    free(index_arr);
+    return timeInit/(float)(CLOCKS_PER_SEC);
 }
 int main(int argc,char ** argv)
 {
     int length; /*LENGTH OF ARAY*/
-    int * Array;
+    int * Values;
     int M; /*param to gallop*/
     float timeIn[3];
     FILE * fp;
+    srand(time(NULL)); /* update random()*/
     timeIn[0] = -1;
     timeIn[1] = -1;
     timeIn[2] = -1;
@@ -91,18 +107,16 @@ int main(int argc,char ** argv)
         printf("error_number of arguments");
         exit(1);
     }
-    fp = initFile(argv[1]);
+    fp = initFile(argv[1]); /*open out files*/
     length = atoi(argv[2]);
     M = atoi(argv[3]);
-    srand(time(NULL)); /* update random()*/
-    assert(Array = (int*)malloc(sizeof(int)*length));
-    Array = create_shuffle(length);
+    Values = getValues(length); /* main data */
     if(argc != 5 || (argc == 5 && strcmp(argv[4],"gallop") != 0))
     {
-        timeIn[0] = InitLine(Array,length);
-        timeIn[2] = InitLineRand(Array,create_shuffle(length),length);
+        timeIn[0] = CountLine(create_shuffle(Values,length,1),length);
+        timeIn[2] = CountLine(create_shuffle(Values,length,0),length);
     }
-    timeIn[1] = InitLineM(M,Array,length);
+    timeIn[1] = CountLine(create_shuffle(Values,length,M),length);
     if(argc != 5 || (argc == 5 && strcmp(argv[4],"gallop") != 0))
     {
         fprintf(fp,"%d;%d;%.3f;%.3f;%.3f;\n",length,M,timeIn[0],timeIn[1],timeIn[2]);
@@ -111,7 +125,7 @@ int main(int argc,char ** argv)
     {
         fprintf(fp,"%d;%d;%.3f;\n",length,M,timeIn[1]);
     }
-    free(Array);
+    free(Values);
     fclose(fp);
     return 0;
 }
