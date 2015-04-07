@@ -18,10 +18,11 @@ int main(int argc, char* argv[], char* env[])
     
     puts("\nenviron:\n");
     
-    while(*env)
+    i = 0;
+    while(env[i])
     {
-        puts(*env);
-        ++env;
+        puts(env[i]);
+        ++i;
     }
     return 0;
 }
