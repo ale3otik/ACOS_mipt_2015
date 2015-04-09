@@ -33,13 +33,14 @@ void string_get(FILE * file_input,string * _str)
         }while(buffer[strlen(buffer)-1] != '\n' && !feof(file_input));     
 }
 
-void smart_get_line(char * file_name,string * command_str,size_t * offset)
+void smart_get_filename(char * file_name,string * command_str,size_t * offset)
 {
 	int index;
 
 	*offset = string_get_next_position(command_str, *offset);
 	for (index = 0; index < MAX_NAME_LENGTH-1; ++index,++*offset)
 	{
+		if(command_str->data[*offset] == '#') break; /* next is comment*/
 		if(command_str->data[*offset] == '\0' || command_str->data[*offset] == ' ' || command_str->data[*offset]=='\t') break;
 		if(command_str->data[*offset] == '\\')
 		{
@@ -59,6 +60,24 @@ void smart_get_line(char * file_name,string * command_str,size_t * offset)
 		file_name[index] = command_str->data[*offset];
 	}
     file_name[index] = '\0';
+}
+
+void smart_get_string(string * dest,string * command_str,size_t * offset)
+{
+	*offset = string_get_next_position(command_str, *offset);
+	while(1)
+	{
+		if(command_str->data[*offset] == '\"' || command_str->data[*offset] == 0) return;
+
+		if(command_str->data[*offset] == '\\' )
+		{
+			++*offset;
+			if(command_str->data[*offset] == '\0' ) return;
+			if(command_str->data[*offset] == 'n') return; /* new string*/
+		}
+		string_push_back(dest, command_str->data[*offset]);
+		++ *offset;
+	}
 }
 
 void initialization_params(params_of_openfile * params)
@@ -120,4 +139,8 @@ char * get_next_word(string * str, size_t * offset)
 	return word;
 }
 
-
+long cartesian_size(struct cartesian_tree * _tree)
+{
+	if(_tree == NULL) return 0;
+	return (long)_tree->size;
+}

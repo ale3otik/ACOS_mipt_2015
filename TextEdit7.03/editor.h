@@ -8,6 +8,6 @@
 
 #include "myTypes.h"
 
-int general_function(char*,data_container * data,winsize * window_size,params_of_openfile * params);
+int general_function(char*,data_container * data,params_of_openfile * params);
 #else
 #endif 

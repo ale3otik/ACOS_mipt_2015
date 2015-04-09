@@ -14,6 +14,7 @@ typedef struct string string;
 
 
 typedef struct cartesian_tree data_container; /* the main container of strings*/
+typedef struct cartesian_tree cartesian_tree_t;
 
 
 #define MAX_NAME_LENGTH 300

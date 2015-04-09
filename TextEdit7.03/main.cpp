@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <sys/ioctl.h>
 #include <unistd.h>
 #include <string.h>
 
@@ -10,7 +9,6 @@
 int main(int argc,char ** argv)
 {
     FILE * fp = NULL;  /* FILE structure*/
-    winsize window_size;  /* to get buffer size */
     params_of_openfile params; /* to parse keys*/
     char file_name[MAX_NAME_LENGTH] = "";
     data_container * data = NULL; /*main data container*/
@@ -43,14 +41,12 @@ int main(int argc,char ** argv)
         }*/
     }
     
-    ioctl(1,TIOCGWINSZ,&window_size);
     
     fp = open_file(file_name,&params,F_BOTH); /* open or create file $name_file*/
 /**********************END SETTINGS*****************************/
     read_file(fp,&data,&params); /* get data*/
 /*********************END READ********************************/
-
-    next_action = general_function(file_name,data,&window_size,&params); /*run general program*/
+    next_action = general_function(file_name,data,&params); /*run general program*/
     switch (next_action)
     {
         case EXIT:
@@ -61,6 +57,7 @@ int main(int argc,char ** argv)
             fprintf(stderr,"\nNEXT_ACTION IS NOT DEFINED\n");
             return -1;
     }
+
 /************************************************************/
 
  /*MAKE SAVING*/

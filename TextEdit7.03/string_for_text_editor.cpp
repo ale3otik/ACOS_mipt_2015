@@ -131,7 +131,16 @@ void string_remove(struct string* _str, size_t index)
 
     string_pop_back(_str);
 }
+void string_cpy(struct string * source, struct string * dest, size_t left,size_t right)
+{
+    source->data = NULL;
+    string_construct(source);
 
+    for(;left<=right;++left)
+    {
+        string_push_back(source, dest->data[left]);   
+    }
+}
 void string_print(FILE * fout,struct string* _str)
 {
     if(_str == NULL)

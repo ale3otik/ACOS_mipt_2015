@@ -64,7 +64,7 @@ int read_file(FILE* fp, data_container ** data,params_of_openfile *params)
         {
             while(!feof(fp))
             {
-                printf(".");
+                /*printf(".");*/
                 do /* read one string (that can be long)*/
                 {
                     buf[0] = '\0';
@@ -73,14 +73,15 @@ int read_file(FILE* fp, data_container ** data,params_of_openfile *params)
                     string_big_push(&new_string,buf,strlen(buf));
                     if(feof(fp)) break;
                 }while(buf[strlen(buf)-1] != '\n');
-                    
+                /*getchar();*/
                     cart_tree_insert(data,&new_string,k); /* add new string to data memory*/
+                   /* fprintf(stderr,"\n%ld\n",(*data)->size);*/
                     ++k;
                     string_construct(&new_string); /* clear and make new*/        
             }
         }
         else{}
-        print_tree(stderr,*data);
+        /*print_tree(stderr,*data);*/
         string_delete(&new_string);
         fclose(fp);
         
