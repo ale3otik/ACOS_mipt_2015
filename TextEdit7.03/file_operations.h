@@ -4,7 +4,7 @@
 
 #include <unistd.h>
 #include <stdlib.h>		
-#include "MyTypes.h"
+#include "my_types.h"
 
 #define F_TO_READ 1
 #define F_TO_WRITE 2

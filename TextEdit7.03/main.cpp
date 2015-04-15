@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "myTypes.h"
+#include "my_types.h"
 
 
 

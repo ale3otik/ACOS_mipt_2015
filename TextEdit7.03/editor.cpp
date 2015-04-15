@@ -2,18 +2,25 @@
 #include <string.h>
 #include <termios.h>
 #include <sys/ioctl.h>
-#include "myTypes.h"
+#include "my_types.h"
 
+/*
+
+
+448 доделать replace
+
+
+*/
 int parse_command(string,size_t *);
 
 void editor_print_pages(data_container * data);
 void editor_print_range(string * command_str,size_t offset, data_container ** data);
 void editor_insert_after(string* command,size_t offset,data_container ** data);
 void editor_edit_string(string * command,size_t offset,data_container ** data);
-void editor_replace();
+void editor_replace(string * command_str,size_t offset, data_container ** data);
 void editor_delete_range(string * command_str,size_t offset, data_container ** data);
 void editor_delete_braces();
-int special_read(string * command_str,size_t offset,data_container ** data,params_of_openfile * params, char * cur_filen);
+int  special_read(string * command_str,size_t offset,data_container ** data,params_of_openfile * params, char * cur_filen);
 void special_write(string * command_str,size_t,char *cur_file_name,data_container * data,params_of_openfile * params);
 void special_exit();
 void special_help();
@@ -59,7 +66,7 @@ int general_function(char* cur_file_name,data_container * data,params_of_openfil
                 editor_edit_string(&command_str,offset,&data);
                 break;
             case REPLACE :
-                editor_replace();
+                editor_replace(&command_str,offset, &data);
                 break;
             case DELETE_RANGE :
                 editor_delete_range(&command_str,offset,&data);
@@ -134,14 +141,39 @@ void editor_print_pages(data_container * data)
         }
     }
 }
+
 void editor_print_range(string * command_str,size_t offset, data_container ** data)
 {
+    long range[2];
+    range[0] = -1;
+    range[1] = -1;
+    offset = string_get_next_position(command_str,offset);
+
+    range[0] = string_get_number(command_str,&offset);
+    offset = string_get_next_position(command_str,offset);
+    if(command_str->data[offset] != '\0')
+    {
+        range[1] = string_get_number(command_str, &offset);
+    }
+    else
+    {
+        range[1] = cartesian_size(*data) ;
+    }
+
+
+    if(range[0] > range[1] || range[0] <= 0 || range[1] <0 || range[1] > cartesian_size(*data))
+    {
+        fprintf(stderr,"\nERROR: wrong range %ld %ld",range[0],range[1]);
+        return;
+    }
+
+    cart_tree_universal_action_with_subtree(data, range[0], range[1], PRINT_ACTION,stdout);
 
 }
+
 void editor_insert_after(string* command,size_t offset,data_container ** data)
 {
-    int position = -1;
-    int count_strings = 0;
+    long position = -1;
     offset = string_get_next_position(command,offset);
     position = string_get_number(command, &offset);
     if(position == -1) 
@@ -150,91 +182,11 @@ void editor_insert_after(string* command,size_t offset,data_container ** data)
         }
     if(position < 0 || position > cartesian_size(*data))
     {
-        fprintf(stderr, "\nERROR: wrong position %d ",position);
+        fprintf(stderr, "\nERROR: wrong position %ld ",position);
         return;
     }
 
-    offset = string_get_next_position(command,offset);
-    if(command->data[offset] != '\"')
-    {
-        fprintf(stderr,"\nNo strings added. Use \"YOUR_ADDED_STR\" to insert str");
-        return;
-    }
-
-    string  inserting_string;
-    inserting_string.data = NULL;
-    string_construct(&inserting_string);
-
-    ++offset;
-    if(command->data[offset] == '\"')
-    {
-        ++offset;
-        if(command->data[offset] == '\"') /* insert several strings*/
-        {
-            ++offset;
-            while(1)
-            {
-                smart_get_string(&inserting_string, command, &offset);
-                if(command->data[offset] == '\0')
-                {
-                    cart_tree_insert(data,&inserting_string,position);
-
-                    string_construct(command);
-                    string_construct(&inserting_string);
-                    
-                    offset = 0;
-                    ++count_strings;
-                    ++position;
-                    fprintf(stdout,"\nstr %d: ",count_strings+1);
-                    string_get(stdin,command); /*read command*/
-
-                    continue;
-                }
-                else
-                {
-                    if(command->data[offset] == '\"')
-                    {
-                        ++offset;
-                        if(command->data[offset] == '\"')
-                        {
-                            ++offset;
-                            if(command->data[offset] == '\"')
-                            {
-                                cart_tree_insert(data,&inserting_string,position);
-                                break;
-                            }
-                            string_push_back(&inserting_string,'\"');
-                        }
-                        string_push_back(&inserting_string,'\"');
-                    }
-                }
-            }
-            string_delete(&inserting_string);
-
-            fprintf(stderr,"\ninserted %d succes",count_strings+1);
-            return;
-        }
-        --offset;
-    }
-
-    while(1)
-    {
-        smart_get_string(&inserting_string, command,&offset);
-        cart_tree_insert(data, &inserting_string, position);
-        if(command->data[offset] == 'n')
-        {       
-            ++position;
-            string_construct(&inserting_string);
-            ++offset;
-            ++count_strings;
-
-            continue;
-        }
-        string_delete(&inserting_string);
-
-        fprintf(stderr,"\ninserted %d succes",count_strings+1);
-        return;
-    }
+    insert_after_special_function(command,offset, data,position);
 }
 void editor_edit_string(string * command,size_t offset, data_container ** data)
 {
@@ -247,11 +199,7 @@ void editor_edit_string(string * command,size_t offset, data_container ** data)
     char * name_commad = NULL;
     int number_of_operation = ERROR;
 
-    string inserting_string;
     string * finding_string = NULL;
-
-    inserting_string.data = NULL;
-    string_construct(&inserting_string);
 
     offset = string_get_next_position(command,offset);
     name_commad = get_next_word(command,&offset);
@@ -282,14 +230,26 @@ void editor_edit_string(string * command,size_t offset, data_container ** data)
     if(number_of_operation == ERROR) 
     {
         fprintf(stderr,"\n unknow edit_string command : \"%s\" ",name_commad);
-        string_delete(&inserting_string);
         return;
     }
 
-    if(array_position < 0 || array_position > cartesian_size(*data))
+    --array_position;
+    if(array_position < 0 || array_position >= cartesian_size(*data))
     {
         fprintf(stderr,"\nERROR:wrong array_position %d ", array_position);
-        string_delete(&inserting_string);
+        return;
+    }
+
+    
+
+    offset = string_get_next_position(command, offset);
+
+    /* insert string*/
+    if(number_of_operation == _EDIT_INSERT)
+    {
+        
+        special_edit_insert_function(command,offset,data,array_position,string_position);
+        fprintf(stderr, "\nSucces insert ");
         return;
     }
 
@@ -299,44 +259,251 @@ void editor_edit_string(string * command,size_t offset, data_container ** data)
         string_position = finding_string->size;
     }
 
-    offset = string_get_next_position(command, offset);
-    if(command->data[offset] != '\"')
+    if(number_of_operation == _EDIT_DELETE)
     {
-        fprintf(stderr,"\nERROR: use \"YOUR_INSERTING_STRING\"");
-        string_delete(&inserting_string);
+        string_position--;
+        if(string_position >= finding_string->size || string_position < 0)
+        {
+            fprintf(stderr, "\nERROR:wrong number");
+            return;
+        }
+        string_remove(finding_string, string_position);
+        fprintf(stderr, "\nSucces delete");
+    }
+    if(number_of_operation == _EDIT_REPLACE)
+    {
+        char inserting_char;
+
+        string_position--;
+        if(string_position >= finding_string->size || string_position < 0)
+        {
+            fprintf(stderr, "\nERROR:wrong number");
+            return;
+        }
+
+        offset = string_get_next_position(finding_string, offset);
+        if( command->data[offset] == 0)
+        {
+            fprintf(stderr,"\nERROR: empty symb ");
+            return;
+        }
+
+        inserting_char = command->data[offset];
+        ++offset;
+        offset = string_get_next_position(finding_string,offset);
+        if(command->data[offset] != 0 && command->data[offset] != '#')
+        {
+            fprintf(stderr, "\nERROR: wring format of str");
+            return;
+        }
+
+        finding_string->data[string_position] = inserting_char;
+        
+        fprintf(stderr, "\nSucces replace ");
         return;
     }
-    smart_get_string(&inserting_string, command, &offset);
-    if(command->data[offset] == '\0')
+        /**/
+}
+   
+void editor_replace(string * command_str,size_t offset, data_container ** data)
+{
+    string searching_str; /* that need to be replaced*/
+    string replacing_str; /* that will insert*/
+    cartesian_tree * get_tree = NULL;
+    cartesian_tree * get_list = NULL;
+    cartesian_tree * old_get_list = NULL;
+    cartesian_tree * end_list = NULL;
+
+    long  range[2];
+    long counter;
+
+    range[0] = -1;
+    range[1] = -1;
+    offset = string_get_next_position(command_str,offset);
+
+    range[0] = string_get_number(command_str,&offset);
+    offset = string_get_next_position(command_str,offset);
+    if(command_str->data[offset] != '\0')
     {
-        fprintf(stderr,"\nERROR: use \"YOUR_INSERTING_STRING\"");
+        range[1] = string_get_number(command_str, &offset);
     }
     else
     {
-        int index = 0;
-        string string_to_push_in_arr;
-        string_to_push_in_arr.data = NULL;
-        string_construct(&string_to_push_in_arr);
-        while(inserting_string.data[index] != 0)
+        range[1] = cartesian_size(*data);
+    }
+
+    if(range[0] == -1 && range[1] == -1)
+    {
+        range[0] = 1;
+        range[1] = cartesian_size(*data);
+    }
+    --range[0];
+    --range[1];
+
+    if(range[0] > range[1] || range[0] <0 || range[1] <0 || range[1] >= cartesian_size(*data))
+    {
+        fprintf(stderr,"\nERROR: wrong range %ld %ld",range[0]+1,range[1]+1);
+        return;
+    }
+
+    offset = string_get_next_position(command_str,offset);
+
+    if(command_str->data[offset] == '^' || command_str->data[offset] == '$')
+    {
+        long ind;
+        int succes;
+
+        int position = -1; /* at the end of str*/
+        if(command_str->data[offset] == '^')
         {
-            string_insert(finding_string, inserting_string.data[index],string_position);
-            ++index;
-            ++string_position;
+            position = 0; /*at the begin of str*/
         }
-        if(command->data[offset] != '\"')
+        
+        counter = 0;
+        ++offset;
+        offset = string_get_next_position(command_str,offset);
+        /*to the end*/
+        for(ind = range[0],counter = range[0];counter <= range[1];++counter)
         {
-            /*string_cpy();*/
+            succes = special_edit_insert_function(command_str,offset,data,ind,position);
+            if(succes <= 0)
+            {
+                fprintf(stderr, "\nERROR: wrong replace, strings modified : %ld",counter);
+                return;
+            }
+            ind += succes;
         }
+        return;
+    }
+
+
+    /*normal replace*/
+    searching_str.data = NULL;
+    replacing_str.data = NULL;
+
+    offset = string_get_next_position(command_str,offset);
+    if( command_str->data[offset] != '\"')
+    {
+        fprintf(stderr,"\nERROR:use \"YOUR STRING\" (1)");
+        return;
+    }
+
+    ++offset;
+    string_construct(&searching_str);
+    smart_get_string(&searching_str,command_str, &offset,ALL_STRING);
+
+    if( command_str->data[offset] != '\"')
+    {
+        fprintf(stderr,"\nERROR:use \"YOUR STRING\" (2)");
+        string_delete(&searching_str);
+        return;
+    }
+
+    ++offset;
+    offset = string_get_next_position(command_str, offset);
+    if( command_str->data[offset] != '\"')
+    {
+        fprintf(stderr,"\nERROR:use \"YOUR STRING\" (3)");
+        string_delete(&searching_str);
+        return;
+    }
+
+    string_construct(&replacing_str);
+    smart_get_string(&replacing_str, command_str, &offset,ALL_STRING);
+    if( command_str->data[offset] != '\"')
+    {
+        fprintf(stderr,"\nERROR:use \"YOUR STRING\" (4)");
+        string_delete(&searching_str);
+        string_delete(&replacing_str);
+        return;
+    }
+
+    get_tree = cart_tree_remove(data, range[0], range[1], FALSE);
+    
+    conv_tree_to_list(&get_list, &end_list, &get_tree);
+    
+    old_get_list = get_list;
+
+    if(searching_str.size == 0)
+    {
+        fprintf(stderr,"\nERROR: wrong searching str");
+        /* insert back*/
 
     }
-    string_delete(&inserting_string);   
-    /**/
+    else
+    {
+        string new_string;
+        char * next_enter = NULL;
 
-}   
-void editor_replace()
-{
-    
+        new_string.data = NULL;
+        string_construct(&new_string);
+
+        while(get_list != NULL)
+        {
+            next_enter = strstr(get_list->text->data,searching_str.data);
+            if(next_enter != NULL)
+            {
+                /*stupid copying without splitting by '\n' */
+                sitring_replace(get_list->text,searching_str.size,&replacing_str,(long)(next_enter - get_list->text->data));
+            }
+            get_list = get_list->right;
+        }
+            
+        
+        get_list = old_get_list;
+        while(get_list != NULL)
+        {
+            cartesian_tree * new_list_elem = NULL;
+            int i;
+            for(i = 0;i<get_list->text->size;++i)
+            {
+
+                if(get_list->text->data[i] != '\n')
+                {
+                    string_push_back(&new_string, get_list->text->data[i]);
+                }
+                else
+                {
+                    cart_tree_insert(&new_list_elem, &new_string, 0);
+                    string_construct(&new_string);
+                    get_list->left->right = new_list_elem;
+                    new_list_elem->left = get_list->left;
+                    new_list_elem->right = get_list;
+                    get_list->left = new_list_elem;
+                    new_list_elem = NULL;
+                }
+            }
+
+            cart_tree_insert(&new_list_elem, &new_string, 0);
+            string_construct(&new_string);
+
+            if(get_list->left != NULL) (get_list->left)->right = new_list_elem;
+            new_list_elem->left = get_list->left;
+            new_list_elem->right = get_list;
+            get_list->left = new_list_elem;
+
+            fprintf(stderr,"\nAAA(1)");
+            
+            string_delete(get_list->text);
+            get_list = get_list->right;
+            new_list_elem->right= get_list;
+            if(get_list != NULL)
+            get_list->left = new_list_elem;
+
+            fprintf(stderr,"\nAAA(1)");
+
+        }
+
+        string_delete(&new_string);
+    }
+    conv_list_to_tree(&old_get_list, &get_list, &get_tree);
+    cart_tree_insert_tree(data, &get_tree, range[0]);
+    string_delete(&searching_str);
+    string_delete(&replacing_str);
+
 }
+
+
 void editor_delete_range(string * command_str,size_t offset, data_container ** data)
 {
     long range[2];
@@ -356,19 +523,19 @@ void editor_delete_range(string * command_str,size_t offset, data_container ** d
     }
 
 
-    if(range[0] > range[1] || range[0] < 0 || range[1] <0 || range[1] > cartesian_size(*data))
+    if(range[0] > range[1] || range[0] <= 0 || range[1] <0 || range[1] > cartesian_size(*data))
     {
         fprintf(stderr,"\nERROR: wrong range %ld %ld",range[0],range[1]);
         return;
     }
     
-    cart_tree_remove(data,range[0], range[1]);
+    cart_tree_remove(data,range[0], range[1],TRUE);
 
     fprintf(stderr,"\n Removed succes : %ld - %ld ",range[0],range[1]);
 }
 void editor_delete_braces()
 {
-    
+       
 }
 int special_read(string * command_str,size_t offset, data_container ** data, params_of_openfile *cur_params,char * cur_file_name)
 {

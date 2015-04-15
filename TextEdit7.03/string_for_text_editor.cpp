@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include "myTypes.h"
+#include "my_types.h"
 
 const size_t MIN_FULL_SIZE_OF_STRING = 32;
 
@@ -141,6 +141,42 @@ void string_cpy(struct string * source, struct string * dest, size_t left,size_t
         string_push_back(source, dest->data[left]);   
     }
 }
+
+void sitring_replace(string * source_str,long size,string * replace_str,long position)
+{
+    long i,k;
+    if(size > replace_str->size)
+    {
+        for(i = position,k = 0;i<position + replace_str->size;++i,++k)
+        {
+            source_str->data[i] = replace_str->data[k];
+        }
+        for(;i<source_str->size;++i)
+        {
+            source_str->data[i] = source_str->data[i+size - replace_str->size];
+        }
+        for(i = replace_str->size; i <size;++i)
+        {
+            string_pop_back(source_str);
+        }
+    }
+    else
+    {
+        for(i = 0; i< replace_str->size - size;++i)
+        {
+            string_push_back(source_str, '*');
+        }
+        for(i = source_str->size - 1;i>= position + replace_str->size;--i)
+        {
+            source_str->data[i] = source_str->data[i - (replace_str->size - size)]; 
+        }
+        for(i = position,k = 0;i<position + replace_str->size;++i,++k)
+        {
+            source_str->data[i] = replace_str->data[k];
+        }
+    }
+}
+
 void string_print(FILE * fout,struct string* _str)
 {
     if(_str == NULL)

@@ -1,4 +1,4 @@
-#include "MyTypes.h"
+#include "my_types.h"
 
 #include <unistd.h>
 #include <stdlib.h>

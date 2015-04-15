@@ -21,7 +21,8 @@ void string_pop_back(struct string* str);
 void string_insert(struct string* str, char c, size_t index);
 void string_assign(struct string* str, char c, size_t index);
 void string_remove(struct string* str, size_t index);
+void string_cpy(struct string * source, struct string * dest, size_t index);
 void string_print(FILE * fout,struct string* str);
 void string_delete(struct string* str);
-
+void sitring_replace(string * source_str,long size,string * replace_str,long position);
 #endif
