@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 /*
- * Он должен распечатать переметры программы, 
+ * Он должен распечатать пaрaметры программы, 
  * которые ей подавали на вход, и ещё 
  * массив кажется называется char **envp,
  * а __environ - это какой-то хак.
@@ -19,7 +19,7 @@ int main(int argc, char* argv[], char* env[])
     puts("\nenviron:\n");
     
     i = 0;
-    while(env[i])
+    while(env[i]!=NULL)
     {
         puts(env[i]);
         ++i;
