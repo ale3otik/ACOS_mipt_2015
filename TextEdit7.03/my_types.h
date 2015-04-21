@@ -4,8 +4,11 @@
 
 #define ERROR -1
 #define SUCCES 1
+
 #define TRUE 1
 #define FALSE 0
+
+#define STANDART_INPUT_ID 0 
 
 typedef struct winsize winsize;
 
@@ -43,8 +46,13 @@ typedef struct params_of_openfile params_of_openfile;
 #define WRITE 130
 #define EXIT 131
 #define HELP 132
-
+#define NO_ACTIONS_NEED 133
 #define ALL_STRING 1
+
+#define NORMAL_REPLACE_MODE 1
+#define BEGIN_REPLACE_MODE 2 /* replace with the "^" command*/
+#define END_REPLACE_MODE 3 /*replace with the "$" command*/
+
 enum action_t
 {
     DELETE_SUBTREE_ACTION,

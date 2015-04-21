@@ -80,12 +80,12 @@ void cart_tree_merge(cartesian_tree_t** merged_tree, cartesian_tree_t** left_tre
  *for correct work of split subtrees' sizes were used
  *also checking to null pointers was needed
  **/
-void cart_tree_split(cartesian_tree_t** splited_tree_ptr, cartesian_tree_t** left_tree_ptr, cartesian_tree_t** right_tree_ptr, size_t index)
+void cart_tree_split(cartesian_tree_t** splited_tree_ptr, cartesian_tree_t** left_tree_ptr, cartesian_tree_t** right_tree_ptr, long index)
 {
     struct cartesian_tree* splited_tree;
 	struct cartesian_tree* left_tree;
 	struct cartesian_tree* right_tree;
-	int left_ind = index;
+	long left_ind = index;
 
 	if (*splited_tree_ptr == NULL)
 		return;
@@ -139,7 +139,7 @@ void cart_tree_split(cartesian_tree_t** splited_tree_ptr, cartesian_tree_t** lef
 }
 
 /**insert new string in list in index position**/
-void cart_tree_insert(cartesian_tree_t** tree, string_t* s, size_t index)
+void cart_tree_insert(cartesian_tree_t** tree, string_t* s, long index)
 {
     cartesian_tree_t** left_tree;
     cartesian_tree_t** right_tree;
@@ -183,26 +183,46 @@ void recalc_params(cartesian_tree_t* tree)
 }
 
 /**print all strings from struct DFS IN-order**/
+static long _cartesian_tree_counter = 0;
 void print_tree(FILE* fp,cartesian_tree_t* tree)
 {
-     string_t* out_str;
-	if (tree == NULL)
-	{
-        fprintf(stderr,"List of strings is empty.\n");
-		return;
-	}
+    string * out_str;
 
-	if (tree->left != NULL)
+    if (tree == NULL)
+    {
+        fprintf(stderr,"List of strings is empty.\n");
+        return;
+    }
+    
+    if(_cartesian_tree_counter == 0)
+    {
+        _cartesian_tree_counter = tree->size - 1;
+    }
+
+	if(tree->left != NULL)
         print_tree(fp,tree->left);
 
     out_str = tree->text;
-    fprintf(fp, "%s\n", out_str->data);
+    fprintf(fp, "%s", out_str->data);
+    if(_cartesian_tree_counter > 0) 
+    {
+        fprintf(fp, "\n");
+        _cartesian_tree_counter--;
+    }
 	/**string_print(tree->text, fp);**/
 
 	if (tree->right != NULL)
 		print_tree(fp,tree->right);
 }
 
+void debug_list_print(cartesian_tree * list)
+{
+    while (list != NULL)
+    {
+        printf("\n%s",list->text->data);
+        list = list->right;
+    }
+}
 int smart_print_tree(FILE * stdout, data_container * data, winsize * size_of_window) /**/
 {
     return 0;
@@ -223,7 +243,7 @@ void tree_delete(cartesian_tree_t* tree)
     string_delete(tree->text);
 }
 
-cartesian_tree * cart_tree_remove(cartesian_tree_t** tree, size_t left_ind, size_t right_ind,int need_delete)
+cartesian_tree * cart_tree_remove(cartesian_tree_t** tree, long left_ind, long right_ind,int need_delete)
 {
     cartesian_tree_t* left_tree_ptr = NULL;
     cartesian_tree_t* mid_tree_ptr = NULL;
@@ -250,9 +270,9 @@ cartesian_tree * cart_tree_remove(cartesian_tree_t** tree, size_t left_ind, size
     }
 }
 /****find****/
-void cart_tree_access(cartesian_tree_t** tree_ptr, size_t index, string_t** s)
+void cart_tree_access(cartesian_tree_t** tree_ptr, long index, string_t** s)
 {
-    int left_ind = index;
+    long left_ind = index;
     cartesian_tree_t* tree;
 
     if (*tree_ptr == NULL)
@@ -282,13 +302,13 @@ void cart_tree_access(cartesian_tree_t** tree_ptr, size_t index, string_t** s)
 
     if (left_ind > 0)
     {
-        cart_tree_access(&(tree->right), (size_t)(left_ind - 1), s);
+        cart_tree_access(&(tree->right), (long)(left_ind - 1), s);
         return;
     }   
 
 }
 
-void cart_tree_universal_action_with_subtree(cartesian_tree_t** tree_ptr, size_t left_ind, size_t right_ind,action_t action,FILE * fp)
+void cart_tree_universal_action_with_subtree(cartesian_tree_t** tree_ptr, long left_ind, long right_ind,action_t action,FILE * fp)
 {
     cartesian_tree_t* left_tree = NULL;
     cartesian_tree_t* mid_tree = NULL;
@@ -315,9 +335,6 @@ void cart_tree_universal_action_with_subtree(cartesian_tree_t** tree_ptr, size_t
 
     if(action == PRINT_ACTION)
     {
-         /**clear window**/
-        system("clear");
-
         print_tree(fp,mid_tree);
         cart_tree_merge(&mid_left_tree, &left_tree, &mid_tree);
     }
@@ -392,7 +409,7 @@ void conv_list_to_tree(cartesian_tree_t** list_ptr, cartesian_tree_t** end_list_
 }
 
 /**insert new list in current list of strings in index position**/
-void cart_tree_insert_tree(cartesian_tree_t** tree_ptr, cartesian_tree_t** inserted_tree_ptr, size_t index)
+void cart_tree_insert_tree(cartesian_tree_t** tree_ptr, cartesian_tree_t** inserted_tree_ptr, long index)
 {
 cartesian_tree_t* left_tree = NULL;
 cartesian_tree_t* right_tree = NULL;

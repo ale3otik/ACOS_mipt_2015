@@ -54,7 +54,6 @@ int read_file(FILE* fp, data_container ** data,params_of_openfile *params)
     {
         int k = 0;
         char buf[MAX_STRING_LENGTH];
-        void * check;
         tree_delete(*data);
         string new_string;
         *data = NULL;
@@ -68,7 +67,7 @@ int read_file(FILE* fp, data_container ** data,params_of_openfile *params)
                 do /* read one string (that can be long)*/
                 {
                     buf[0] = '\0';
-                    check = fgets(buf,MAX_STRING_LENGTH-1,fp);
+                    fgets(buf,MAX_STRING_LENGTH-1,fp);
                     
                     string_big_push(&new_string,buf,strlen(buf));
                     if(feof(fp)) break;

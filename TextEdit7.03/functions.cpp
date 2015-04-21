@@ -1,8 +1,9 @@
 #include "my_types.h"
 #include <ctype.h>
 #include <string.h>
-
-size_t string_get_next_position(string * str,size_t offset)
+#include <sys/ioctl.h>
+#include <stdio.h>
+long string_get_next_position(string * str,long offset)
 {
 	if(str == NULL)
 	{
@@ -16,24 +17,31 @@ size_t string_get_next_position(string * str,size_t offset)
     return offset;
 }
 
-void string_get(FILE * file_input,string * _str)
+int string_get(FILE * file_input,string * _str)
 {
     void * error_check;
     char buffer[MID_COMMAND_LENGTH];
-      do
+    int is_first = TRUE;
+    do
+    {
+        error_check = fgets(buffer,MID_COMMAND_LENGTH-1,file_input);
+        if(feof(file_input)) 
         {
-            error_check = fgets(buffer,MID_COMMAND_LENGTH-1,file_input);
-            if(feof(file_input)) break;
-            if(error_check == NULL)
-            {
-                fprintf(stderr,"\nSCAN ERROR(tring_get)\n");
-                exit(1);
-            }
-            string_big_push(_str,buffer,strlen(buffer));
-        }while(buffer[strlen(buffer)-1] != '\n' && !feof(file_input));     
+            if(is_first) return FALSE;
+            break; 
+        }
+        if(error_check == NULL)
+        {
+            fprintf(stderr,"\nSCAN ERROR(tring_get)\n");
+            exit(1);
+        }
+        string_big_push(_str,buffer,strlen(buffer));
+        is_first = FALSE;
+    }while(buffer[strlen(buffer)-1] != '\n' && !feof(file_input));     
+    return TRUE;
 }
 
-void smart_get_filename(char * file_name,string * command_str,size_t * offset)
+void smart_get_filename(char * file_name,string * command_str,long * offset)
 {
 	int index;
 
@@ -62,7 +70,7 @@ void smart_get_filename(char * file_name,string * command_str,size_t * offset)
     file_name[index] = '\0';
 }
 
-void smart_get_string(string * dest,string * command_str,size_t * offset, int param)
+void smart_get_string(string * dest,string * command_str,long * offset, int param)
 {
 	*offset = string_get_next_position(command_str, *offset);
 	while(1)
@@ -92,7 +100,7 @@ void smart_get_string(string * dest,string * command_str,size_t * offset, int pa
 	}
 }
 
-long string_get_number(string * command,size_t * offset)
+long string_get_number(string * command,long * offset)
  {
  	if(!isdigit(command->data[*offset]))
  	{
@@ -111,7 +119,7 @@ long string_get_number(string * command,size_t * offset)
  	}
  }
 
-char * get_next_word(string * str, size_t * offset)
+char * get_next_word(string * str, long * offset)
 {
 	int index = 0;
 
@@ -131,8 +139,7 @@ char * get_next_word(string * str, size_t * offset)
 	}
 	word[index] = '\0';
 	
-	return word;
-}
+	return word;}
 /********************************************************************************/
 
 void initialization_params(params_of_openfile * params)
@@ -141,9 +148,9 @@ void initialization_params(params_of_openfile * params)
 }
 
 
-int parse_key(char * str , params_of_openfile * params)
+long parse_key(char * str , params_of_openfile * params)
 {   
-    size_t ofset = 0;
+    long ofset = 0;
 
     if(strncmp(str,"-bin",MAX_NAME_LENGTH) == 0 ||
        strncmp(str,"-b",MAX_NAME_LENGTH) == 0 ||
@@ -155,7 +162,7 @@ int parse_key(char * str , params_of_openfile * params)
 }
 
 
-void insert_after_special_function(string* command,size_t offset,data_container ** data, long position)
+void insert_after_special_function(string* command,long offset,data_container ** data, long position)
 {
 	long count_strings = 0;
   	offset = string_get_next_position(command,offset);
@@ -190,7 +197,7 @@ void insert_after_special_function(string* command,size_t offset,data_container 
                     ++count_strings;
                     ++position;
                     fprintf(stdout,"\nstr %ld: ",count_strings+1);
-                    string_get(stdin,command); /*read command*/
+                    string_get(stderr,command); /*read command*/
 
                     continue;
                 }
@@ -243,7 +250,7 @@ void insert_after_special_function(string* command,size_t offset,data_container 
 
 /* isert several strings inside array_position string before atring_position elem*/
 int special_edit_insert_function(string * command,
-								  size_t offset, 
+								  long offset, 
 								  data_container ** data,
 								  long array_position,
 								  long string_position)
@@ -324,3 +331,253 @@ int special_edit_insert_function(string * command,
         string_delete(&string_to_push_in_arr);
         return count_strings;
 }
+/*********************************/ 
+long get_ranges(long * range,string * command_str, cartesian_tree * data, long offset)
+{
+    range[0] = -1;
+    range[1] = -1;
+    offset = string_get_next_position(command_str,offset);
+
+    range[0] = string_get_number(command_str,&offset);
+    offset = string_get_next_position(command_str,offset);
+    if(command_str->data[offset] != '\0')
+    {
+        range[1] = string_get_number(command_str, &offset);
+    }
+    else
+    {
+        range[1] = cartesian_size(data);
+    }
+
+    if(range[0] == -1 && range[1] == -1)
+    {
+        range[0] = 1;
+        range[1] = cartesian_size(data);
+    }
+    --range[0];
+    --range[1];
+
+    if(range[0] > range[1] || range[0] <0 || range[1] <0 || range[1] >= cartesian_size(data))
+    {
+        fprintf(stderr,"\nERROR: wrong range %ld %ld",range[0]+1,range[1]+1);
+        return -1;
+    }
+    ++offset;
+    return offset;
+}
+
+/************************************/
+int string_scan_braces(int * braces_deep_level, string * scan_str)
+{
+    short is_error = FALSE;
+    char * scan_ptr = scan_str->data;
+
+    while(*scan_ptr != '\0')
+    {
+        if(*scan_ptr == '{')
+            ++*braces_deep_level;
+            
+        if(*scan_ptr == '}' && --*braces_deep_level < 0)
+        {
+            is_error = TRUE;
+            break;
+        }
+
+        ++scan_ptr;
+    }
+    return is_error;
+}
+
+void string_delete_braces(int * braces_deep_level, string* source_str)
+{
+    char * del_begin = source_str->data;
+    long del_size = 0;
+    char * scan_ptr = source_str->data;
+
+    while(*scan_ptr != '\0')
+    { 
+        if(*scan_ptr == '{')
+        {
+            if(!*braces_deep_level)
+            {
+                del_begin = scan_ptr;
+                del_size = 0;
+            }
+
+            ++*braces_deep_level;
+        }
+
+        if(braces_deep_level)
+            ++del_size;
+       
+        if(*scan_ptr == '}')
+        {
+            --*braces_deep_level;
+
+            if(!*braces_deep_level)
+            {
+                string_replace(source_str, del_size, NULL, (long)(del_begin - source_str->data));
+                scan_ptr -= del_size;
+                del_size = 0;
+            }
+        }
+
+        ++scan_ptr;
+    } 
+
+    if(*braces_deep_level)
+        string_replace(source_str, del_size, NULL, (long)(del_begin - source_str->data));
+}
+
+void in_order_delete_braces(cartesian_tree** tree_ptr)
+{
+    int braces_deep_level = 0;
+    short is_error = FALSE;
+    string_t* cur_str;
+    cartesian_tree_t* tree = *tree_ptr;
+    cartesian_tree_t* left_tree = NULL;
+    cartesian_tree_t* right_tree = NULL;
+    cartesian_tree_t* list = NULL;
+    cartesian_tree_t* end_list = NULL;
+    cartesian_tree_t* list_ptr;
+
+    conv_tree_to_list(&list, &end_list, &tree);
+
+    list_ptr = list;
+
+    while(TRUE)
+    {
+        is_error = string_scan_braces(&braces_deep_level, list_ptr->text);
+        if(is_error)
+        {
+            fprintf(stderr, "Can't do this operation: braces aren't balanced.\n");
+            break;
+        }
+
+        if(list_ptr == end_list)
+        {
+            if(braces_deep_level > 0)
+            {   
+                is_error = -1;
+                fprintf(stderr, "Can't do this operation: braces aren't balanced.\n");
+            }
+            break;
+        }
+
+        list_ptr = list_ptr->right;
+    }
+
+    if(!is_error)
+    {
+        list_ptr = list;
+
+        while(TRUE)
+        {
+            string_delete_braces(&braces_deep_level,list_ptr->text);
+
+            cur_str = list_ptr->text;
+            if(*cur_str->data == '\0')
+            {
+                left_tree = list_ptr->left;
+                right_tree = list_ptr->right;
+
+                list_ptr->left = NULL;
+                list_ptr->right = NULL;
+                tree_delete(list_ptr);
+
+                if(left_tree)
+                    left_tree->right = right_tree;
+                else
+                    list = right_tree;
+
+                if(right_tree)
+                    right_tree->left = left_tree;
+                else
+                {
+                    end_list = left_tree;
+                    break;
+                }
+
+                list_ptr = right_tree;
+            }
+            else
+            {
+                if(list_ptr == end_list)
+                    break;
+
+                list_ptr = list_ptr->right;
+            }
+        }
+    }
+
+    conv_list_to_tree(&list, &end_list, &tree);   
+    *tree_ptr = tree; 
+}
+int count_num_symbols(long num)
+{
+    if(num < 0) num *= -1;
+    int count = 0;
+    do
+    {
+        num/= 10;
+        ++count;
+    }while(num > 0);
+
+    return count;
+}
+/**********************************************/
+int super_print_string(string * printed_string, winsize * size_of_term,long * num,int * balance) // TRUE if need new str
+{
+    static unsigned long next_printed_index = 0;
+    int count_printed_symbols = 0;
+    int count_printed_strings = 0;
+
+    if(next_printed_index == 0)
+    {
+        count_printed_symbols = 1 + count_num_symbols(*num) + printed_string->size;
+    }
+    else
+    {
+        count_printed_symbols = strlen(printed_string->data + next_printed_index);
+    }
+
+    count_printed_strings = (count_printed_symbols+size_of_term->ws_col)/size_of_term->ws_col; 
+    if(*balance - count_printed_strings >= 0)
+    {
+        if(*balance != size_of_term->ws_row) 
+        {
+            fprintf(stdout,"\n");
+        }
+        if(next_printed_index == 0)
+        {
+            fprintf(stdout,"%ld>",*num);
+        }
+
+        fprintf(stdout,"%s",printed_string->data + next_printed_index);
+        ++ *num;
+        *balance -= count_printed_strings;
+        next_printed_index = 0;
+        return TRUE;
+    }
+    else
+    {
+        count_printed_strings = *balance;
+        count_printed_symbols  =count_printed_strings * size_of_term->ws_col;
+        
+        if(*balance != size_of_term->ws_row) 
+        {
+            fprintf(stdout,"\n");
+        }
+        if(next_printed_index == 0)
+        {
+            fprintf(stdout,"%ld>",*num);
+            count_printed_symbols += 1 + count_num_symbols(*num);
+        }
+        fwrite(printed_string->data + next_printed_index, sizeof(char), count_printed_symbols,stdout);
+
+        *balance = 0;
+        next_printed_index += count_printed_symbols;
+        return FALSE;
+    }
+}
+

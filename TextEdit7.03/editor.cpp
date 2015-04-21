@@ -4,24 +4,17 @@
 #include <sys/ioctl.h>
 #include "my_types.h"
 
-/*
+int parse_command(string,long *);
 
-
-448 доделать replace
-
-
-*/
-int parse_command(string,size_t *);
-
-void editor_print_pages(data_container * data);
-void editor_print_range(string * command_str,size_t offset, data_container ** data);
-void editor_insert_after(string* command,size_t offset,data_container ** data);
-void editor_edit_string(string * command,size_t offset,data_container ** data);
-void editor_replace(string * command_str,size_t offset, data_container ** data);
-void editor_delete_range(string * command_str,size_t offset, data_container ** data);
-void editor_delete_braces();
-int  special_read(string * command_str,size_t offset,data_container ** data,params_of_openfile * params, char * cur_filen);
-void special_write(string * command_str,size_t,char *cur_file_name,data_container * data,params_of_openfile * params);
+void editor_print_pages(data_container ** data,long start_index);
+void editor_print_range(string * command_str,long offset, data_container ** data);
+void editor_insert_after(string* command,long offset,data_container ** data);
+void editor_edit_string(string * command,long offset,data_container ** data);
+void editor_replace(string * command_str,long offset, data_container ** data);
+void editor_delete_range(string * command_str,long offset, data_container ** data);
+void editor_delete_braces(string * command_str, long offset, data_container ** data);
+int  special_read(string * command_str,long offset,data_container ** data,params_of_openfile * params, char * cur_filen);
+void special_write(string * command_str,long,char *cur_file_name,data_container * data,params_of_openfile * params);
 void special_exit();
 void special_help();
 
@@ -34,27 +27,33 @@ int min(int a,int b)
 int general_function(char* cur_file_name,data_container * data,params_of_openfile * params)
 {
     string command_str;
-    int entered_command;
-    size_t offset;
+    int entered_command = ERROR;
+    long offset;
     command_str.data = NULL;
-    system("clear"); /*clear screen*/
-    /*print_tree(stdout,data);*/  
-    while(1)
+
+    if(entered_command != NO_ACTIONS_NEED)
+    {
+        system("clear"); /*clear screen*/
+    }
+
+    while(TRUE)
     {
         string_construct(&command_str);
         printf("\n\n>>editor:");
-
-        string_get(stdin,&command_str); /*read command*/
-
-        string_print(stdout,&command_str);
-        
-        offset= 0;
-        entered_command = parse_command(command_str,&offset);
-        
+       /* tree_print(stderr,data);*/
+        if(!string_get(stdin,&command_str)) /*read command*/
+        { 
+            entered_command = EXIT;
+        }
+        else 
+        {
+            offset= 0;
+            entered_command = parse_command(command_str,&offset);
+        }
         switch (entered_command)
         {
             case PRINT_PAGES:
-                editor_print_pages(data);
+                editor_print_pages(&data,1);
                 break;
             case PRINT_RANGE :
                 editor_print_range(&command_str,offset,&data);
@@ -72,7 +71,7 @@ int general_function(char* cur_file_name,data_container * data,params_of_openfil
                 editor_delete_range(&command_str,offset,&data);
                 break;
             case DELETE_BRACES :
-                editor_delete_braces();
+                editor_delete_braces(&command_str,offset, & data);
                 break;
             
             case READ :
@@ -91,6 +90,8 @@ int general_function(char* cur_file_name,data_container * data,params_of_openfil
             case HELP :
                 special_help();
                 break;
+            case NO_ACTIONS_NEED:
+                break;
             default:
                 fprintf(stderr,"unknown command: \"%s\"\n",command_str.data);
         }
@@ -98,53 +99,72 @@ int general_function(char* cur_file_name,data_container * data,params_of_openfil
     return 0;
 }
 
-void editor_print_pages(data_container * data)
+void editor_print_pages(data_container ** data, long start_index)
 {
+
     struct termios old_term,new_term;
     char ch;
-    winsize window_size;  /* to get buffer size */
-    int check = 0;
-
-    print_tree(stdout,data);
+    winsize window_size;  
+    int is_exit = FALSE;
+    long count_printed_real_strings = start_index;
+    int balance = 0;
+    int is_need_new_str = FALSE;
+    cartesian_tree * list = NULL;
+    cartesian_tree * end_list = NULL;
+    cartesian_tree * begin_list = NULL;
 
     ioctl(1,TIOCGWINSZ,&window_size);
-
     tcgetattr( STDIN_FILENO, &old_term);
     new_term = old_term;
     new_term.c_lflag &= ~( ICANON | ECHO );
-    while(1)
+    
+    if(cartesian_size(*data) == 0)
     {
-        /*check = smart_print_tree(stdout, *data, &window_size);*/
-        if(check == 1)
-        {
-        tcsetattr( STDIN_FILENO, TCSANOW, &new_term );
-            while(1)
+        fprintf(stderr, "\nhave no strings");
+    }
+    else
+    {
+        conv_tree_to_list(&begin_list, &end_list, data);
+        list = begin_list;
+
+        while(!is_exit)
+        {   
+            system("clear");
+            balance = window_size.ws_row ;
+            while(balance > 0 && list != NULL)
+            {
+                is_need_new_str = super_print_string(list->text,&window_size,&count_printed_real_strings, &balance);
+                if(is_need_new_str)
+                {
+                    list = list->right;
+                }
+            }
+            if(list == NULL) is_exit = TRUE;
+            tcsetattr( STDIN_FILENO, TCSANOW, &new_term );
+            while(TRUE)
             {
                 ch = getchar();
-                if(ch == 'Q' || ch == 'q')
-                {
-                    tcsetattr( STDIN_FILENO, TCSANOW, &old_term );
-                    system("clear");
-                    return;
-                }
-                if(ch == ' ') 
+                if(ch == ' ')
                 {
                     tcsetattr( STDIN_FILENO, TCSANOW, &old_term );
                     break;
                 }
+                if(ch == 'q' || ch == 'Q')
+                {
+                    tcsetattr( STDIN_FILENO, TCSANOW, &old_term );
+                    is_exit = TRUE;
+                    break;
+                }  
             }
         }
-        else
-        {
-            tcsetattr( STDIN_FILENO, TCSANOW, &old_term );
-            return;
-        }
+        conv_list_to_tree(&begin_list, &end_list, data);
     }
 }
 
-void editor_print_range(string * command_str,size_t offset, data_container ** data)
+void editor_print_range(string * command_str,long offset, data_container ** data)
 {
     long range[2];
+    cartesian_tree * printed_tree = NULL;
     range[0] = -1;
     range[1] = -1;
     offset = string_get_next_position(command_str,offset);
@@ -160,18 +180,19 @@ void editor_print_range(string * command_str,size_t offset, data_container ** da
         range[1] = cartesian_size(*data) ;
     }
 
-
     if(range[0] > range[1] || range[0] <= 0 || range[1] <0 || range[1] > cartesian_size(*data))
     {
         fprintf(stderr,"\nERROR: wrong range %ld %ld",range[0],range[1]);
         return;
     }
+    range[0] -- ;
 
-    cart_tree_universal_action_with_subtree(data, range[0], range[1], PRINT_ACTION,stdout);
-
+    printed_tree = cart_tree_remove(data, range[0], range[1], FALSE);
+    editor_print_pages(&printed_tree,range[0]+1);
+    cart_tree_insert_tree(data, &printed_tree, range[0]);
 }
 
-void editor_insert_after(string* command,size_t offset,data_container ** data)
+void editor_insert_after(string* command,long offset,data_container ** data)
 {
     long position = -1;
     offset = string_get_next_position(command,offset);
@@ -188,14 +209,14 @@ void editor_insert_after(string* command,size_t offset,data_container ** data)
 
     insert_after_special_function(command,offset, data,position);
 }
-void editor_edit_string(string * command,size_t offset, data_container ** data)
+void editor_edit_string(string * command,long offset, data_container ** data)
 {
     #define _EDIT_INSERT 1
     #define _EDIT_DELETE 2
     #define _EDIT_REPLACE 3
 
-    int array_position = -1;
-    int string_position = -1;
+    long array_position = -1;
+    long string_position = -1;
     char * name_commad = NULL;
     int number_of_operation = ERROR;
 
@@ -236,18 +257,15 @@ void editor_edit_string(string * command,size_t offset, data_container ** data)
     --array_position;
     if(array_position < 0 || array_position >= cartesian_size(*data))
     {
-        fprintf(stderr,"\nERROR:wrong array_position %d ", array_position);
+        fprintf(stderr,"\nERROR:wrong array_position %ld ", array_position);
         return;
     }
-
-    
 
     offset = string_get_next_position(command, offset);
 
     /* insert string*/
     if(number_of_operation == _EDIT_INSERT)
     {
-        
         special_edit_insert_function(command,offset,data,array_position,string_position);
         fprintf(stderr, "\nSucces insert ");
         return;
@@ -305,7 +323,8 @@ void editor_edit_string(string * command,size_t offset, data_container ** data)
         /**/
 }
    
-void editor_replace(string * command_str,size_t offset, data_container ** data)
+
+void editor_replace(string * command_str,long offset, data_container ** data)
 {
     string searching_str; /* that need to be replaced*/
     string replacing_str; /* that will insert*/
@@ -313,93 +332,49 @@ void editor_replace(string * command_str,size_t offset, data_container ** data)
     cartesian_tree * get_list = NULL;
     cartesian_tree * old_get_list = NULL;
     cartesian_tree * end_list = NULL;
-
     long  range[2];
-    long counter;
+    short replace_mode = NORMAL_REPLACE_MODE;
 
-    range[0] = -1;
-    range[1] = -1;
-    offset = string_get_next_position(command_str,offset);
+    offset = get_ranges(range, command_str, *data,offset);
+    if(offset < 0) return;
 
-    range[0] = string_get_number(command_str,&offset);
-    offset = string_get_next_position(command_str,offset);
-    if(command_str->data[offset] != '\0')
+    searching_str.data = NULL;
+    string_construct(&searching_str);
+    if(command_str->data[offset] == '^' || command_str->data[offset] == '$')
     {
-        range[1] = string_get_number(command_str, &offset);
+        if(command_str->data[offset] == '^')
+        {
+            replace_mode = BEGIN_REPLACE_MODE;
+        }
+        if(command_str->data[offset] == '$')
+        {
+            replace_mode = END_REPLACE_MODE;
+        }
+        ++offset;
     }
     else
     {
-        range[1] = cartesian_size(*data);
-    }
-
-    if(range[0] == -1 && range[1] == -1)
-    {
-        range[0] = 1;
-        range[1] = cartesian_size(*data);
-    }
-    --range[0];
-    --range[1];
-
-    if(range[0] > range[1] || range[0] <0 || range[1] <0 || range[1] >= cartesian_size(*data))
-    {
-        fprintf(stderr,"\nERROR: wrong range %ld %ld",range[0]+1,range[1]+1);
-        return;
-    }
-
-    offset = string_get_next_position(command_str,offset);
-
-    if(command_str->data[offset] == '^' || command_str->data[offset] == '$')
-    {
-        long ind;
-        int succes;
-
-        int position = -1; /* at the end of str*/
-        if(command_str->data[offset] == '^')
-        {
-            position = 0; /*at the begin of str*/
-        }
-        
-        counter = 0;
-        ++offset;
+        /*normal replace*/
         offset = string_get_next_position(command_str,offset);
-        /*to the end*/
-        for(ind = range[0],counter = range[0];counter <= range[1];++counter)
+        if(command_str->data[offset] != '\"')
         {
-            succes = special_edit_insert_function(command_str,offset,data,ind,position);
-            if(succes <= 0)
-            {
-                fprintf(stderr, "\nERROR: wrong replace, strings modified : %ld",counter);
-                return;
-            }
-            ind += succes;
+            fprintf(stderr,"\nERROR:use \"YOUR STRING\" (1)");
+            return;
         }
-        return;
+
+        ++offset;
+        string_construct(&searching_str);
+        smart_get_string(&searching_str,command_str, &offset,ALL_STRING);
+
+        if(command_str->data[offset] != '\"')
+        {
+            fprintf(stderr,"\nERROR:use \"YOUR STRING\" (2)");
+            string_delete(&searching_str);
+            return;
+        }
+        ++offset;
     }
 
-
-    /*normal replace*/
-    searching_str.data = NULL;
-    replacing_str.data = NULL;
-
-    offset = string_get_next_position(command_str,offset);
-    if( command_str->data[offset] != '\"')
-    {
-        fprintf(stderr,"\nERROR:use \"YOUR STRING\" (1)");
-        return;
-    }
-
-    ++offset;
-    string_construct(&searching_str);
-    smart_get_string(&searching_str,command_str, &offset,ALL_STRING);
-
-    if( command_str->data[offset] != '\"')
-    {
-        fprintf(stderr,"\nERROR:use \"YOUR STRING\" (2)");
-        string_delete(&searching_str);
-        return;
-    }
-
-    ++offset;
     offset = string_get_next_position(command_str, offset);
     if( command_str->data[offset] != '\"')
     {
@@ -407,9 +382,12 @@ void editor_replace(string * command_str,size_t offset, data_container ** data)
         string_delete(&searching_str);
         return;
     }
-
+    
+    ++offset;
+    replacing_str.data = NULL;
     string_construct(&replacing_str);
     smart_get_string(&replacing_str, command_str, &offset,ALL_STRING);
+
     if( command_str->data[offset] != '\"')
     {
         fprintf(stderr,"\nERROR:use \"YOUR STRING\" (4)");
@@ -418,39 +396,58 @@ void editor_replace(string * command_str,size_t offset, data_container ** data)
         return;
     }
 
-    get_tree = cart_tree_remove(data, range[0], range[1], FALSE);
-    
+    get_tree = cart_tree_remove(data, range[0]+1, range[1]+1, FALSE);
     conv_tree_to_list(&get_list, &end_list, &get_tree);
     
     old_get_list = get_list;
+    end_list  = get_list;
 
-    if(searching_str.size == 0)
+    if(searching_str.size == 0 && replace_mode == NORMAL_REPLACE_MODE)
     {
         fprintf(stderr,"\nERROR: wrong searching str");
         /* insert back*/
-
     }
     else
     {
         string new_string;
-        char * next_enter = NULL;
-
+        long next_enter = 0;
+        char * next_enter_pointer= NULL;
+        char * cur_string_ptr = NULL;
         new_string.data = NULL;
         string_construct(&new_string);
-
         while(get_list != NULL)
         {
-            next_enter = strstr(get_list->text->data,searching_str.data);
-            if(next_enter != NULL)
+            next_enter = 0;
+            next_enter_pointer = NULL;
+            cur_string_ptr = get_list->text->data;
+            while(next_enter >= 0)
             {
-                /*stupid copying without splitting by '\n' */
-                sitring_replace(get_list->text,searching_str.size,&replacing_str,(long)(next_enter - get_list->text->data));
+                if(replace_mode == NORMAL_REPLACE_MODE) 
+                {
+                    next_enter_pointer = strstr(cur_string_ptr,searching_str.data);
+                    if(next_enter_pointer != NULL) next_enter = (long)(next_enter_pointer - get_list->text->data);
+                    else next_enter = - 1;
+                }
+                else if(replace_mode == BEGIN_REPLACE_MODE)
+                {
+                    next_enter = 0;
+                }
+                else
+                {
+                    next_enter = get_list->text->size;
+                }
+                if(next_enter >= 0)
+                {
+                    /*stupid copying without splitting by '\n' */
+                    cur_string_ptr = string_replace(get_list->text,searching_str.size,&replacing_str,next_enter);
+                }
             }
             get_list = get_list->right;
         }
-            
-        
+
         get_list = old_get_list;
+        old_get_list = NULL;
+        
         while(get_list != NULL)
         {
             cartesian_tree * new_list_elem = NULL;
@@ -465,38 +462,42 @@ void editor_replace(string * command_str,size_t offset, data_container ** data)
                 else
                 {
                     cart_tree_insert(&new_list_elem, &new_string, 0);
+                    if(old_get_list == NULL)
+                    {
+                        old_get_list = new_list_elem;
+                    }
                     string_construct(&new_string);
-                    get_list->left->right = new_list_elem;
+                    if(get_list ->left != NULL) (get_list->left)->right = new_list_elem;
                     new_list_elem->left = get_list->left;
                     new_list_elem->right = get_list;
                     get_list->left = new_list_elem;
                     new_list_elem = NULL;
                 }
             }
-
+            new_list_elem = NULL;
             cart_tree_insert(&new_list_elem, &new_string, 0);
             string_construct(&new_string);
+            if(old_get_list == NULL)
+            {
+                old_get_list = new_list_elem;
+            }
 
             if(get_list->left != NULL) (get_list->left)->right = new_list_elem;
             new_list_elem->left = get_list->left;
             new_list_elem->right = get_list;
             get_list->left = new_list_elem;
-
-            fprintf(stderr,"\nAAA(1)");
             
             string_delete(get_list->text);
-            get_list = get_list->right;
-            new_list_elem->right= get_list;
-            if(get_list != NULL)
-            get_list->left = new_list_elem;
 
-            fprintf(stderr,"\nAAA(1)");
+            if(get_list->left != NULL) (get_list->left)->right = get_list->right;
+            if(get_list->right != NULL) (get_list->right)->left = get_list->left;
+            end_list = get_list->left;
+            get_list = get_list->right;
 
         }
-
         string_delete(&new_string);
     }
-    conv_list_to_tree(&old_get_list, &get_list, &get_tree);
+    conv_list_to_tree(&old_get_list, &end_list, &get_tree);
     cart_tree_insert_tree(data, &get_tree, range[0]);
     string_delete(&searching_str);
     string_delete(&replacing_str);
@@ -504,7 +505,20 @@ void editor_replace(string * command_str,size_t offset, data_container ** data)
 }
 
 
-void editor_delete_range(string * command_str,size_t offset, data_container ** data)
+void editor_delete_braces(string * command_str, long offset, data_container ** data)
+{
+    long range[2];
+    cartesian_tree * get_tree;
+    offset = get_ranges(range, command_str, *data, offset);
+    if(offset < 0) return;
+    get_tree = cart_tree_remove(data, range[0]+1, range[1]+1, FALSE);
+
+    in_order_delete_braces(&get_tree);
+    cart_tree_insert_tree(data, &get_tree, range[0]);
+}
+
+
+void editor_delete_range(string * command_str,long offset, data_container ** data)
 {
     long range[2];
     range[0] = -1;
@@ -533,11 +547,9 @@ void editor_delete_range(string * command_str,size_t offset, data_container ** d
 
     fprintf(stderr,"\n Removed succes : %ld - %ld ",range[0],range[1]);
 }
-void editor_delete_braces()
-{
-       
-}
-int special_read(string * command_str,size_t offset, data_container ** data, params_of_openfile *cur_params,char * cur_file_name)
+
+
+int special_read(string * command_str,long offset, data_container ** data, params_of_openfile *cur_params,char * cur_file_name)
 {
     FILE * fp = NULL;
     char file_name[MAX_NAME_LENGTH] = "";
@@ -587,20 +599,29 @@ int special_read(string * command_str,size_t offset, data_container ** data, par
     }
     else
     {
-        return ERROR;
         fprintf(stderr,"\nfailure reading");
+        return ERROR;
     }
 }
-void special_write(string * command_str,size_t offset,char * cur_file_name,data_container * data,params_of_openfile * params)
+void special_write(string * command_str,long offset,char * cur_file_name,data_container * data,params_of_openfile * params)
 {
     char symb;
     int check = ERROR;
+    string special_string;
+    special_string.data = NULL;
+
+    if(command_str == NULL)
+    {
+        string_construct(&special_string);
+        command_str = &special_string;
+        offset = 0;
+    }
     offset = string_get_next_position(command_str,offset);
     if(offset<command_str->size && command_str->data[offset]!= '#')
     {   
         char file_name[MAX_NAME_LENGTH] = "";
         smart_get_filename(file_name,command_str, &offset);
-        
+        string_delete(&special_string);
         /**printf("\n%d",offset);
         printf("\nfile_name:%s",file_name); */ /*debug*/
         
@@ -639,11 +660,11 @@ void special_write(string * command_str,size_t offset,char * cur_file_name,data_
         fprintf(stderr,"\ncan't open \"%s\" to write",cur_file_name);
         return;
     }
-
 }
 
 void special_exit()
 {
+    fprintf(stderr, "\n");
     /* Maby safe?*/
 }
 void special_help( )
@@ -651,10 +672,11 @@ void special_help( )
     
 }
 /****************************************/
-int parse_command(string command, size_t * offset)
+int parse_command(string command, long * offset)
 {
     char next_chr;
     *offset = string_get_next_position(&command,0);
+    if(command.size == 0 || command.data[*offset] == '#') return NO_ACTIONS_NEED;
     /*1 word command*/
      /* special commans*/
     if(!strncmp(command.data+*offset,"read",strlen("read")))
