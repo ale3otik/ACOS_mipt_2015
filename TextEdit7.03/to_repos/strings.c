@@ -8,17 +8,16 @@ void string_construct(struct string* _str)
 {
 	if(_str->data != NULL)
     {
-       /* free(_str->data);*/
+       /*free(_str->data);*/
     }
     if(!(_str->data = (char*)malloc(MIN_FULL_SIZE_OF_STRING * sizeof(char))))
     {
-        printf("malloc_error");
-        exit(1);/**default data array with 32 empty elements*/
+        fprintf(stderr,"malloc_error");
+        exit(1);/*default data array with 32 empty elements*/
     }
     _str->size = 0;
     _str->data[0] = 0;
     _str->capacity = MIN_FULL_SIZE_OF_STRING;/**the real number of allocated memory*/
-    /**printf("%lu %lu\n",s->size,s->capacity);*/
 }
 
 void string_big_push(struct string* _str, char* push_str,long size)

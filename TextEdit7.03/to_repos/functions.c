@@ -30,11 +30,7 @@ int string_get(FILE * file_input,string * _str)
             if(is_first) return FALSE;
             break; 
         }
-        if(error_check == NULL)
-        {
-            fprintf(stderr,"\nSCAN ERROR(tring_get)\n");
-            exit(1);
-        }
+
         string_big_push(_str,buffer,strlen(buffer));
         is_first = FALSE;
     }while(buffer[strlen(buffer)-1] != '\n' && !feof(file_input));     
@@ -197,9 +193,8 @@ void insert_after_special_function(string* command,long offset,data_container **
                     offset = 0;
                     ++count_strings;
                     ++position;
-                    fprintf(stdout,"\nstr %ld: ",count_strings+1);
-                    string_get(stderr,command); /*read command*/
-
+                    fprintf(stderr,"\nstr %ld: ",count_strings+1); 
+                    string_get(stdin,command); /*read command*/
                     continue;
                 }
                 else

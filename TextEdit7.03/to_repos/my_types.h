@@ -30,8 +30,8 @@ struct params_of_openfile
 };
 typedef struct params_of_openfile params_of_openfile;
 
-#define MIN_FULL_SIZE_OF_STRING 32
-
+static const long MIN_FULL_SIZE_OF_STRING = 32;
+	
 /* COMANDS CODE*/
 #define PRINT_PAGES 121
 #define PRINT_RANGE 122
