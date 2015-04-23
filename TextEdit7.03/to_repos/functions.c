@@ -19,12 +19,11 @@ long string_get_next_position(string * str,long offset)
 
 int string_get(FILE * file_input,string * _str)
 {
-    void * error_check;
     char buffer[MID_COMMAND_LENGTH];
     int is_first = TRUE;
     do
     {
-        error_check = fgets(buffer,MID_COMMAND_LENGTH-1,file_input);
+        fgets(buffer,MID_COMMAND_LENGTH-1,file_input);
         if(feof(file_input)) 
         {
             if(is_first) return FALSE;

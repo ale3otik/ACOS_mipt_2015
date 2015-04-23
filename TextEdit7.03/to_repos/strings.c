@@ -10,14 +10,14 @@ void string_construct(struct string* _str)
     {
        /*free(_str->data);*/
     }
-    if(!(_str->data = (char*)malloc(MIN_FULL_SIZE_OF_STRING * sizeof(char))))
+    if(!(_str->data = (char*)malloc(START_STRING_SIZE * sizeof(char))))
     {
         fprintf(stderr,"malloc_error");
         exit(1);/*default data array with 32 empty elements*/
     }
     _str->size = 0;
     _str->data[0] = 0;
-    _str->capacity = MIN_FULL_SIZE_OF_STRING;/**the real number of allocated memory*/
+    _str->capacity = START_STRING_SIZE;/**the real number of allocated memory*/
 }
 
 void string_big_push(struct string* _str, char* push_str,long size)
@@ -87,7 +87,7 @@ void string_insert(struct string* _str, char c, long index)
 void string_pop_back(struct string* _str)
 {
 /**reallocation of memory when size less than quarter of capacity*/
-    if(_str->size * 4 <= _str->capacity && _str->capacity > MIN_FULL_SIZE_OF_STRING)/**but capacity can not to be less then 32*/
+    if(_str->size * 4 <= _str->capacity && _str->capacity > START_STRING_SIZE)/**but capacity can not to be less then 32*/
     {
         _str->capacity /= 2;
         if(!(_str->data = (char*)realloc(_str->data, _str->capacity * sizeof(char))))

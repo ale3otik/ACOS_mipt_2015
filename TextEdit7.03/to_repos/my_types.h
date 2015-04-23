@@ -17,7 +17,6 @@ typedef struct string string;
 
 
 typedef struct cartesian_tree data_container; /* the main container of strings*/
-typedef struct cartesian_tree cartesian_tree_t;
 
 
 #define MAX_NAME_LENGTH 300
@@ -30,7 +29,7 @@ struct params_of_openfile
 };
 typedef struct params_of_openfile params_of_openfile;
 
-static const long MIN_FULL_SIZE_OF_STRING = 32;
+#define START_STRING_SIZE 32
 	
 /* COMANDS CODE*/
 #define PRINT_PAGES 121
@@ -58,13 +57,6 @@ static const long MIN_FULL_SIZE_OF_STRING = 32;
 #define F_TO_READ 2
 #define F_TO_WRITE 3
 
-enum action_t
-{
-    DELETE_SUBTREE_ACTION,
-    PRINT_ACTION,
-	DELETE_BRACES_ACTION
-};
-typedef enum action_t action_t; 
 #endif 
 
 #include "functions.h"

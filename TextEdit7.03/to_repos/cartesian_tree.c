@@ -1,5 +1,6 @@
 
 #include "my_types.h"
+
 void tree_print(FILE * fp ,cartesian_tree* tree)
 {
     if(tree == NULL)

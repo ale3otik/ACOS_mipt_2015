@@ -28,6 +28,6 @@ int special_edit_insert_function(string * command,
 
 long get_ranges(long * range ,string * command_str, cartesian_tree * data, long offset);
 
-void in_order_delete_braces(cartesian_tree_t** tree_ptr);
+void in_order_delete_braces(cartesian_tree** tree_ptr);
 int super_print_string(string * printed_string, winsize * size_of_term,long * num,int * balance);
 #endif
