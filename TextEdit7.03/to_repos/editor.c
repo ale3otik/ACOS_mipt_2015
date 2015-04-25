@@ -159,29 +159,12 @@ void editor_print_range(string * command_str,long offset, data_container ** data
 {
     long range[2];
     cartesian_tree * printed_tree = NULL;
-    range[0] = -1;
-    range[1] = -1;
+
     offset = string_get_next_position(command_str,offset);
+    offset = get_ranges(range, command_str, *data, offset);
+    if(offset < 0) return;
 
-    range[0] = string_get_number(command_str,&offset);
-    offset = string_get_next_position(command_str,offset);
-    if(command_str->data[offset] != '\0')
-    {
-        range[1] = string_get_number(command_str, &offset);
-    }
-    else
-    {
-        range[1] = cartesian_size(*data) ;
-    }
-
-    if(range[0] > range[1] || range[0] <= 0 || range[1] <0 || range[1] > cartesian_size(*data))
-    {
-        fprintf(stderr,"\nERROR: wrong range %ld %ld",range[0],range[1]);
-        return;
-    }
-    range[0] -- ;
-
-    printed_tree = cart_tree_remove(data, range[0], range[1], FALSE);
+    printed_tree = cart_tree_remove(data, range[0]+1, range[1]+1, FALSE);
     editor_print_pages(&printed_tree,range[0]+1);
     cart_tree_insert_tree(data, &printed_tree, range[0]);
 }
@@ -314,7 +297,6 @@ void editor_edit_string(string * command,long offset, data_container ** data)
         fprintf(stderr, "\nSucces replace ");
         return;
     }
-        /**/
 }
    
 
@@ -624,11 +606,6 @@ void special_write(string * command_str,long offset,char * cur_file_name,data_co
             fprintf(stderr,"\nsucces writing to \"%s\"\n",file_name);
         }
     }
-    /*if(strlen(cur_file_name)==0)
-    {
-        printf("\n no active files\n");
-        return ;
-    }*/
     if(check == ERROR)
     {
         if(!strncmp(cur_file_name,"",strlen(cur_file_name)))

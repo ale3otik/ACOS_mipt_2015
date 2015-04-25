@@ -309,42 +309,6 @@ void cart_tree_access(cartesian_tree** tree_ptr, long index, string** s)
 
 }
 
-/*void cart_tree_universal_action_with_subtree(cartesian_tree** tree_ptr, long left_ind, long right_ind,action_t action,FILE * fp)
-{
-    cartesian_tree* left_tree = NULL;
-    cartesian_tree* mid_tree = NULL;
-    cartesian_tree* mid_left_tree = NULL;
-    cartesian_tree* right_tree = NULL;
-    cartesian_tree* tree = *tree_ptr;
-
-    cart_tree_split(&tree, &mid_left_tree, &right_tree, right_ind);
-    cart_tree_split(&mid_left_tree, &left_tree, &mid_tree, left_ind - 1);
-    
-    if(action == DELETE_SUBTREE_ACTION)
-    {
-        tree_delete(mid_tree);
-        mid_left_tree = left_tree;
-    }
-
-    if(action == DELETE_BRACES_ACTION)
-    {
-        printf("Ok1\n");
-        
-        mid_left_tree = left_tree;
-
-    }
-
-    if(action == PRINT_ACTION)
-    {
-        print_tree(fp,mid_tree);
-        cart_tree_merge(&mid_left_tree, &left_tree, &mid_tree);
-    }
-
-    cart_tree_merge(&tree, &mid_left_tree, &right_tree);
-    *tree_ptr = tree;
-}*/
-
-
 long cartesian_size(struct cartesian_tree * _tree)
 {
     if(_tree == NULL) return 0;

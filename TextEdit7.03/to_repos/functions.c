@@ -333,18 +333,11 @@ long get_ranges(long * range,string * command_str, cartesian_tree * data, long o
 
     range[0] = string_get_number(command_str,&offset);
     offset = string_get_next_position(command_str,offset);
-    if(command_str->data[offset] != '\0')
-    {
-        range[1] = string_get_number(command_str, &offset);
-    }
-    else
-    {
-        range[1] = cartesian_size(data);
-    }
+    range[1] = string_get_number(command_str, &offset);
 
-    if(range[0] == -1 && range[1] == -1)
+    if(range[0] == -1) range[0] = 1;
+    if(range[1] == -1)
     {
-        range[0] = 1;
         range[1] = cartesian_size(data);
     }
     --range[0];
@@ -355,7 +348,7 @@ long get_ranges(long * range,string * command_str, cartesian_tree * data, long o
         fprintf(stderr,"\nERROR: wrong range %ld %ld",range[0]+1,range[1]+1);
         return -1;
     }
-    ++offset;
+   /* ++offset;*/
     return offset;
 }
 

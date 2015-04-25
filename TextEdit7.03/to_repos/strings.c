@@ -8,12 +8,12 @@ void string_construct(struct string* _str)
 {
 	if(_str->data != NULL)
     {
-       /*free(_str->data);*/
+       free(_str->data);
     }
     if(!(_str->data = (char*)malloc(START_STRING_SIZE * sizeof(char))))
     {
-        fprintf(stderr,"malloc_error");
-        exit(1);/*default data array with 32 empty elements*/
+        fprintf(stderr,"\nCRASH ERROR: malloc_error");
+        exit(1);
     }
     _str->size = 0;
     _str->data[0] = 0;
@@ -27,7 +27,6 @@ void string_big_push(struct string* _str, char* push_str,long size)
         size--;
     }
     _str->size += size;
-    /*printf("\n_str->size: %d <%s>\n",_str->size,push_str);*/
     if(_str->size >= _str->capacity)
     {
         while(_str->size >= _str->capacity)
