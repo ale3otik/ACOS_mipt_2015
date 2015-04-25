@@ -9,16 +9,12 @@
 int main(int argc,char ** argv)
 {
     FILE * fp = NULL;  /* FILE structure*/
-    params_of_openfile params; /* to parse keys*/
     char file_name[MAX_NAME_LENGTH] = "";
     data_container * data = NULL; /*main data container*/
     int next_action;
-    int i;
 /**
 * get start settings of editor
 */
-
-    initialization_params(&params); /*set default to params*/
     
     if(argc < 2)
     {
@@ -26,27 +22,13 @@ int main(int argc,char ** argv)
     }
     else
     {
-        for(i = 1; i < argc && argv[i][0] == '-';++i)
-        {
-            parse_key(argv[i],&params);
-        }
-        if(i < argc)
-        {
-            strncpy(file_name,argv[i],MAX_NAME_LENGTH);
-        }
-        /*else
-        {
-            fprintf(stderr,"\nERROR: where is my file?\n");
-            exit(1);
-        }*/
+        strncpy(file_name,argv[1],MAX_NAME_LENGTH);
     }
-    
-    
-    fp = open_file(file_name,&params,F_BOTH); /* open or create file $name_file*/
+    fp = open_file(file_name,F_BOTH); /* open or create file $name_file*/
 /**********************END SETTINGS*****************************/
-    read_file(fp,&data,&params); /* get data*/
+    read_file(fp,&data); /* get data*/
 /*********************END READ********************************/
-    next_action = general_function(file_name,data,&params); /*run general program*/
+    next_action = general_function(file_name,data); /*run general program*/
     switch (next_action)
     {
         case EXIT:
@@ -58,10 +40,6 @@ int main(int argc,char ** argv)
             return -1;
     }
 
-/************************************************************/
-
- /*MAKE SAVING*/
-/************************************************************/
     return 0;
 }
 

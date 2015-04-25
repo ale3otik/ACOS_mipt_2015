@@ -3,6 +3,14 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <stdio.h>
+
+int min(int a,int b)
+{
+    if(a<b) return a;
+    return b;
+}
+
+
 long string_get_next_position(string * str,long offset)
 {
 	if(str == NULL)
@@ -16,6 +24,7 @@ long string_get_next_position(string * str,long offset)
     }
     return offset;
 }
+
 
 int string_get(FILE * file_input,string * _str)
 {
@@ -35,6 +44,7 @@ int string_get(FILE * file_input,string * _str)
     }while(buffer[strlen(buffer)-1] != '\n' && !feof(file_input));     
     return TRUE;
 }
+
 
 void smart_get_filename(char * file_name,string * command_str,long * offset)
 {
@@ -64,6 +74,7 @@ void smart_get_filename(char * file_name,string * command_str,long * offset)
 	}
     file_name[index] = '\0';
 }
+
 
 void smart_get_string(string * dest,string * command_str,long * offset, int param)
 {
@@ -95,6 +106,7 @@ void smart_get_string(string * dest,string * command_str,long * offset, int para
 	}
 }
 
+
 long string_get_number(string * command,long * offset)
  {
  	if(!isdigit(command->data[*offset]))
@@ -113,6 +125,7 @@ long string_get_number(string * command,long * offset)
 
  	}
  }
+
 
 char * get_next_word(string * str, long * offset)
 {
@@ -134,26 +147,7 @@ char * get_next_word(string * str, long * offset)
 	}
 	word[index] = '\0';
 	
-	return word;}
-/********************************************************************************/
-
-void initialization_params(params_of_openfile * params)
-{
-    params->binary_file = FALSE;
-}
-
-
-long parse_key(char * str , params_of_openfile * params)
-{   
-    long ofset = 0;
-
-    if(strncmp(str,"-bin",MAX_NAME_LENGTH) == 0 ||
-       strncmp(str,"-b",MAX_NAME_LENGTH) == 0 ||
-       strncmp(str,"-binary",MAX_NAME_LENGTH) == 0 )
-    {
-        params->binary_file = 1;
-    }
-    return ofset;
+	return word;
 }
 
 
@@ -243,6 +237,7 @@ void insert_after_special_function(string* command,long offset,data_container **
     }
 }
 
+
 /* isert several strings inside array_position string before atring_position elem*/
 int special_edit_insert_function(string * command,
 								  long offset, 
@@ -328,7 +323,8 @@ int special_edit_insert_function(string * command,
         string_delete(&string_push_in_arr);
         return count_strings;
 }
-/*********************************/ 
+
+
 long get_ranges(long * range,string * command_str, cartesian_tree * data, long offset)
 {
     range[0] = -1;
@@ -363,7 +359,8 @@ long get_ranges(long * range,string * command_str, cartesian_tree * data, long o
     return offset;
 }
 
-/************************************/
+
+/***************special functions to delete braces command*********************/
 int string_scan_braces(int * braces_deep_level, string * scan_str)
 {
     short is_error = FALSE;
@@ -426,7 +423,7 @@ void string_delete_braces(int * braces_deep_level, string* source_str)
         string_replace(source_str, del_size, NULL, (long)(del_begin - source_str->data));
 }
 
-void in_order_delete_braces(cartesian_tree** tree_ptr)
+void tree_delete_braces(cartesian_tree** tree_ptr)
 {
     int braces_deep_level = 0;
     short is_error = FALSE;
@@ -510,6 +507,9 @@ void in_order_delete_braces(cartesian_tree** tree_ptr)
     conv_list_to_tree(&list, &end_list, &tree);   
     *tree_ptr = tree; 
 }
+
+/**********************************************/
+
 int count_num_symbols(long num)
 {
     int count = 0;
@@ -523,7 +523,8 @@ int count_num_symbols(long num)
 
     return count;
 }
-/**********************************************/
+
+
 int super_print_string(string * printed_string, winsize * size_of_term,long * num,int * balance) /*TRUE if need new str*/
 {
     static unsigned long next_printed_index = 0;

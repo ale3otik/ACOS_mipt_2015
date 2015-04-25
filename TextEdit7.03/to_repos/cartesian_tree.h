@@ -35,6 +35,8 @@ void cart_tree_access(cartesian_tree** tree_ptr, long index, string** s);
 /**void cart_tree_assign(cartesian_tree* tree, char* str, long sz, long index);
 void cart_tree_remove(long index);**/
 
+long cartesian_size(struct cartesian_tree * _tree);
+
 cartesian_tree * cart_tree_get_and_remove(cartesian_tree** tree, long left_ind, long right_ind);
 cartesian_tree * cart_tree_get(cartesian_tree** tree, long left_ind, long right_ind);
 

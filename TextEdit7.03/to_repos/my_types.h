@@ -23,12 +23,6 @@ typedef struct cartesian_tree data_container; /* the main container of strings*/
 #define MID_COMMAND_LENGTH 100
 #define MAX_STRING_LENGTH 100
 
-struct params_of_openfile
-{
-    int binary_file;
-};
-typedef struct params_of_openfile params_of_openfile;
-
 #define START_STRING_SIZE 32
 	
 /* COMANDS CODE*/
@@ -46,7 +40,7 @@ typedef struct params_of_openfile params_of_openfile;
 #define EXIT 131
 #define HELP 132
 #define NO_ACTIONS_NEED 133
-#define ALL_STRING 1
+#define ALL_STRING 1 
 
 #define NORMAL_REPLACE_MODE 1
 #define BEGIN_REPLACE_MODE 2 /* replace with the "^" command*/

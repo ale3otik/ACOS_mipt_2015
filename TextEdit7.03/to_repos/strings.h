@@ -21,9 +21,9 @@ void string_pop_back(struct string* str);
 void string_insert(struct string* str, char c, long index);
 void string_assign(struct string* str, char c, long index);
 void string_remove(struct string* str, long index);
-void HIDE_string_cpy(struct string * source, struct string * dest, long index);
 void string_cpy(struct string * source, struct string * dest, long left,long right);
 void string_print(FILE * fout,struct string* str);
 void string_delete(struct string* str);
 char * string_replace(string * source_str,long size,string * replace_str,long position);
+
 #endif

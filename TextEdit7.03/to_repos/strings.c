@@ -92,7 +92,7 @@ void string_pop_back(struct string* _str)
         _str->capacity /= 2;
         if(!(_str->data = (char*)realloc(_str->data, _str->capacity * sizeof(char))))
         {
-            printf("realloc_error %ld",_str->capacity);
+            printf("\nERROR:realloc_error %ld",_str->capacity);
             exit(2);
         }
     }

@@ -8,6 +8,5 @@
 
 #include "my_types.h"
 
-int general_function(char*,data_container * data,params_of_openfile * params);
-#else
+int general_function(char*,data_container * data);
 #endif 

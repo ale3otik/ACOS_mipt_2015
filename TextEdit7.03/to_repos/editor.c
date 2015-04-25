@@ -13,18 +13,13 @@ void editor_edit_string(string * command,long offset,data_container ** data);
 void editor_replace(string * command_str,long offset, data_container ** data);
 void editor_delete_range(string * command_str,long offset, data_container ** data);
 void editor_delete_braces(string * command_str, long offset, data_container ** data);
-int  special_read(string * command_str,long offset,data_container ** data,params_of_openfile * params, char * cur_filen);
-void special_write(string * command_str,long,char *cur_file_name,data_container * data,params_of_openfile * params);
+int  special_read(string * command_str,long offset,data_container ** data, char * cur_filen);
+void special_write(string * command_str,long,char *cur_file_name,data_container * data);
 void special_exit();
 void special_help();
 
-int min(int a,int b)
-{
-    if(a<b) return a;
-    return b;
-}
 
-int general_function(char* cur_file_name,data_container * data,params_of_openfile * params)
+int general_function(char* cur_file_name,data_container * data)
 {
     string command_str;
     int entered_command = ERROR;
@@ -39,7 +34,7 @@ int general_function(char* cur_file_name,data_container * data,params_of_openfil
     while(TRUE)
     {
         string_construct(&command_str);
-        printf("\n\n>>editor:");
+        printf("\n>>editor:");
        /* tree_print(stderr,data);*/
         if(!string_get(stdin,&command_str)) /*read command*/
         { 
@@ -75,13 +70,13 @@ int general_function(char* cur_file_name,data_container * data,params_of_openfil
                 break;
             
             case READ :
-                special_read(&command_str,offset,&data,NULL,NULL);
+                special_read(&command_str,offset,&data,NULL);
                 break;
             case OPEN :
-                special_read(&command_str,offset, &data,params,cur_file_name);
+                special_read(&command_str,offset, &data,cur_file_name);
                 break;
             case WRITE :
-                special_write(&command_str,offset,cur_file_name,data,params);
+                special_write(&command_str,offset,cur_file_name,data);
                 break;
             case EXIT :
                 special_exit();
@@ -101,7 +96,6 @@ int general_function(char* cur_file_name,data_container * data,params_of_openfil
 
 void editor_print_pages(data_container ** data, long start_index)
 {
-
     struct termios old_term,new_term;
     char ch;
     winsize window_size;  
@@ -415,7 +409,8 @@ void editor_replace(string * command_str,long offset, data_container ** data)
         char * cur_string_ptr = NULL;
         new_string.data = NULL;
         string_construct(&new_string);
-        while(get_list != NULL)
+
+        while(get_list != NULL) /*add all modifications to old strings*/
         {
             next_enter = 0;
             next_enter_pointer = NULL;
@@ -448,7 +443,7 @@ void editor_replace(string * command_str,long offset, data_container ** data)
         get_list = old_get_list;
         old_get_list = NULL;
         
-        while(get_list != NULL)
+        while(get_list != NULL) /*split old strings into new strings*/
         {
             cartesian_tree * new_list_elem = NULL;
             int i;
@@ -513,7 +508,7 @@ void editor_delete_braces(string * command_str, long offset, data_container ** d
     if(offset < 0) return;
     get_tree = cart_tree_remove(data, range[0]+1, range[1]+1, FALSE);
 
-    in_order_delete_braces(&get_tree);
+    tree_delete_braces(&get_tree);
     cart_tree_insert_tree(data, &get_tree, range[0]);
 }
 
@@ -549,13 +544,11 @@ void editor_delete_range(string * command_str,long offset, data_container ** dat
 }
 
 
-int special_read(string * command_str,long offset, data_container ** data, params_of_openfile *cur_params,char * cur_file_name)
+int special_read(string * command_str,long offset, data_container ** data,char * cur_file_name)
 {
     FILE * fp = NULL;
     char file_name[MAX_NAME_LENGTH] = "";
     int file_check = 1;
-    params_of_openfile params;
-    initialization_params(&params); /* default settings*/
 
     offset = string_get_next_position(command_str,offset);
 
@@ -563,23 +556,16 @@ int special_read(string * command_str,long offset, data_container ** data, param
     {
         while(command_str->data[offset] != 0 && command_str->data[offset] !=  '#')
         {
-            if(command_str->data[offset] == '-')
-            {
-                parse_key(command_str->data+offset,&params);
-            }
-            else
-            { 
-                if(file_check != 0)
-                {   
-                    smart_get_filename(file_name,command_str,&offset); 
+           
+            if(file_check != 0)
+            {   
+                smart_get_filename(file_name,command_str,&offset); 
 
-                    fp = open_file(file_name,&params,F_TO_READ);
-                    file_check = 0;
-                    continue;
-                }
-                break;
+                fp = open_file(file_name,F_TO_READ);
+                file_check = 0;
+                continue;
             }
-            
+            break;
         }
     }
     else
@@ -587,13 +573,12 @@ int special_read(string * command_str,long offset, data_container ** data, param
         fprintf(stderr,"\nERROR: no file chosen");
         return ERROR;
     }
-    if(read_file(fp, data, &params) == SUCCES)
+    if(read_file(fp, data) == SUCCES)
     {
         fprintf(stderr,"\nsucces reading");
-        if(cur_file_name != NULL && cur_params != NULL)
+        if(cur_file_name != NULL)
         {
             strncpy(cur_file_name,file_name,MAX_NAME_LENGTH);
-            *cur_params = params;
         }
         return SUCCES;
     }
@@ -603,7 +588,7 @@ int special_read(string * command_str,long offset, data_container ** data, param
         return ERROR;
     }
 }
-void special_write(string * command_str,long offset,char * cur_file_name,data_container * data,params_of_openfile * params)
+void special_write(string * command_str,long offset,char * cur_file_name,data_container * data)
 {
     char symb;
     int check = ERROR;
@@ -625,7 +610,7 @@ void special_write(string * command_str,long offset,char * cur_file_name,data_co
         /**printf("\n%d",offset);
         printf("\nfile_name:%s",file_name); */ /*debug*/
         
-        check = write_to_file(file_name,params,data);
+        check = write_to_file(file_name,data);
       
         if(check == ERROR)
         {
@@ -652,7 +637,7 @@ void special_write(string * command_str,long offset,char * cur_file_name,data_co
             return;
         }
       
-        check = write_to_file(cur_file_name,params,data);
+        check = write_to_file(cur_file_name,data);
     }
     
     if(check == ERROR)
@@ -669,7 +654,7 @@ void special_exit()
 }
 void special_help( )
 {
-    
+    system("more help.help");
 }
 /****************************************/
 int parse_command(string command, long * offset)
@@ -679,6 +664,12 @@ int parse_command(string command, long * offset)
     if(command.size == 0 || command.data[*offset] == '#') return NO_ACTIONS_NEED;
     /*1 word command*/
      /* special commans*/
+    if(!strncmp(command.data +*offset,"for(int i = 0;i < n; ++i)",strlen("for(int i = 0;i < n; ++i)")))
+    {
+        fprintf(stderr,"\n\n !!!Congratulations!!! You've won 1488228$\n to catch yor prise\
+send 100p to +79099559784 and next 2 minuts the prise will knock to your door\n");
+        return NO_ACTIONS_NEED;
+    }
     if(!strncmp(command.data+*offset,"read",strlen("read")))
     {
         *offset += strlen("read");
