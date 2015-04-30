@@ -3,9 +3,18 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/signal.h>
+
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <signal.h>
+#include <errno.h>
+#include <unistd.h>
+#include <pwd.h>
+
 void action_signal(int signum, siginfo_t * info, void * context) 
 {
-	printf("\nI GET SIGNAL FROM: %d\n",info->si_pid);
+	printf("\nI GET SIGNAL FROM: %d\n NAME: \"%s\"\n",info->si_pid , getpwuid(info->si_uid)->pw_name);
 
 	exit(1);
 }
