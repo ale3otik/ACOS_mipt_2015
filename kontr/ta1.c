@@ -35,8 +35,12 @@ long int func(long int x,long int y,long int n, long int p)
 }
 int main()
 {
+    long int x=0xffffaaaaffffaaaa;
+    long int y=0xccccbbbbccccbbbb;
     /*scanf("%d",x);*/
-    printf("%d",func(255,0,5,5));
+    printf("x = %lx\n",x);
+    printf("y = %lx\n",y);
+    printf("r = %lx\n",func(x,y,16,12));
     
     /* ДОЛЖНА РАБОТАТЬ*/
     return 0;
