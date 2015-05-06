@@ -41,7 +41,7 @@ int string_get(FILE * file_input,string * _str)
 
         string_big_push(_str,buffer,strlen(buffer));
         is_first = FALSE;
-    }while(buffer[strlen(buffer)-1] != '\n' && !feof(file_input));     
+    }while(buffer[strlen(buffer)-1] != '\n' && !feof(file_input));  
     return TRUE;
 }
 
@@ -258,7 +258,8 @@ int special_edit_insert_function(string * command,
 
 	if(string_position > finding_string->size)
     {
-        fprintf(stderr,"\nERROR: wrong asnwer %ld ",string_position);
+        fprintf(stderr,"\nERROR: wrong index to insert %ld ",string_position);
+        return ERROR;
     }
         
         if(command->data[offset++] != '\"')
@@ -472,12 +473,12 @@ void tree_delete_braces(cartesian_tree** tree_ptr)
                 list_ptr->right = NULL;
                 tree_delete(list_ptr);
 
-                if(left_tree)
+                if(left_tree != NULL)
                     left_tree->right = right_tree;
                 else
                     list = right_tree;
 
-                if(right_tree)
+                if(right_tree != NULL)
                     right_tree->left = left_tree;
                 else
                 {

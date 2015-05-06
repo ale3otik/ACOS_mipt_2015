@@ -4,17 +4,20 @@
 #include <unistd.h>
 #include "my_types.h"
 
+static int STRING_ALLOCATED_COUNTER = 0;
 void string_construct(struct string* _str)
 {
 	if(_str->data != NULL)
     {
-       free(_str->data);
+       string_delete(_str);
     }
     if(!(_str->data = (char*)malloc(START_STRING_SIZE * sizeof(char))))
     {
         fprintf(stderr,"\nCRASH ERROR: malloc_error");
         exit(1);
     }
+    ++STRING_ALLOCATED_COUNTER;
+    /*fprintf(stderr,"\nSTRING_ALLOCATED_COUNTER::%d",STRING_ALLOCATED_COUNTER);*/
     _str->size = 0;
     _str->data[0] = 0;
     _str->capacity = START_STRING_SIZE;/**the real number of allocated memory*/
@@ -89,14 +92,14 @@ void string_pop_back(struct string* _str)
     if(_str->size * 4 <= _str->capacity && _str->capacity > START_STRING_SIZE)/**but capacity can not to be less then 32*/
     {
         _str->capacity /= 2;
-        if(!(_str->data = (char*)realloc(_str->data, _str->capacity * sizeof(char))))
+        if((_str->data = (char*)realloc(_str->data, _str->capacity * sizeof(char))) == NULL)
         {
             printf("\nERROR:realloc_error %ld",_str->capacity);
             exit(2);
         }
     }
-        --_str->size;/**decreasing size*/
-        _str->data[_str->size] = 0; /* MAY BE WRONG*/
+    --_str->size;/**decreasing size*/
+    _str->data[_str->size] = 0; /* MAY BE WRONG*/
 }
 
 void string_remove(struct string* _str, long index)
@@ -122,9 +125,10 @@ char * string_replace(string * source_str,long size,string * replace_str,long po
 {
     long i,k;
     string new_string;
+
+    new_string.data = NULL;
     if(replace_str == NULL)
     {   
-        new_string.data = NULL;
         string_construct(&new_string);
         replace_str = &new_string;
     }
@@ -158,6 +162,7 @@ char * string_replace(string * source_str,long size,string * replace_str,long po
             source_str->data[i] = replace_str->data[k];
         }
     }
+    string_delete(&new_string);
     return source_str->data + i;
 }
 
@@ -173,7 +178,12 @@ void string_print(FILE * fout,struct string* _str)
 
 void string_delete(struct string* str)
 {
+    
     if(str->data != NULL)
+    {
         free(str->data);
+        --STRING_ALLOCATED_COUNTER;
+    }
+  /*  fprintf(stderr,"\nSTRING_ALLOCATED_COUNTER::%d",STRING_ALLOCATED_COUNTER);*/
 }
 

@@ -1,5 +1,6 @@
 
 #include "my_types.h"
+static int TREE_ALLOCATED_MEMORY = 0;
 
 void tree_print(FILE * fp ,cartesian_tree* tree)
 {
@@ -22,6 +23,11 @@ void cart_tree_construct(cartesian_tree** tree,string* str)
 {
     cartesian_tree* new_tree = (cartesian_tree * )malloc(sizeof(cartesian_tree));/** = {NULL,NULL,s,rand(),s};**/
     string* insert_str = (string *)malloc(sizeof(string));
+
+
+    TREE_ALLOCATED_MEMORY += 2;
+   /* fprintf(stderr,"\nTREE_ALLOCATED_MEMORY::%d", TREE_ALLOCATED_MEMORY);*/
+
     insert_str->data = NULL;
     string_construct(insert_str);
     string_big_push(insert_str, str->data, str->size);
@@ -31,14 +37,15 @@ void cart_tree_construct(cartesian_tree** tree,string* str)
     new_tree->right = NULL;
     new_tree->priority = rand();
     *tree = new_tree;
+
 }
 
 /**basic merge of two lists of strings that relized in the form of cartesian_tree*/
 void cart_tree_merge(cartesian_tree** merged_tree, cartesian_tree** left_tree, cartesian_tree** right_tree)
 {
-        cartesian_tree* res = NULL;
-        cartesian_tree* buff_ptr;
-        cartesian_tree* help_ptr;
+    cartesian_tree* res = NULL;
+    cartesian_tree* buff_ptr;
+    cartesian_tree* help_ptr;
     /**cases if one of merged tree is NULL**/
 	if (*left_tree == NULL)
 	{
@@ -140,7 +147,7 @@ void cart_tree_split(cartesian_tree** splited_tree_ptr, cartesian_tree** left_tr
 }
 
 /**insert new string in list in index position**/
-void cart_tree_insert(cartesian_tree** tree, string* s, long index)
+void cart_tree_insert(cartesian_tree** tree, string* _str, long index)
 {
     cartesian_tree** left_tree;
     cartesian_tree** right_tree;
@@ -152,7 +159,7 @@ void cart_tree_insert(cartesian_tree** tree, string* s, long index)
     /**case if tree was empty, new tree has one node**/
     if (*tree == NULL)
     {
-        cart_tree_construct(tree, s);
+        cart_tree_construct(tree, _str);
         return;
     }
     /**init auxiliary buff trees**/
@@ -164,7 +171,7 @@ void cart_tree_insert(cartesian_tree** tree, string* s, long index)
     insert_tree = &insert_pointer;
 
     /**create new one-node tree**/
-    cart_tree_construct(insert_tree, s);
+    cart_tree_construct(insert_tree, _str);
     /**full merge**/
     cart_tree_merge(&left_merge_ptr, left_tree, insert_tree);
     cart_tree_merge(tree, &left_merge_ptr, right_tree);
@@ -224,15 +231,10 @@ void debug_list_print(cartesian_tree * list)
         list = list->right;
     }
 }
-int smart_print_tree(FILE * stdout, data_container * data, winsize * size_of_window) /**/
-{
-    return 0;
-}
-
 /**clear memory from tree**/
 void tree_delete(cartesian_tree* tree)
 {
-    if (tree == NULL || !tree)
+    if (tree == NULL)
         return;
 
     if(tree->left)
@@ -240,8 +242,13 @@ void tree_delete(cartesian_tree* tree)
 
     if(tree->right)
         tree_delete(tree->right);
+
     /**clear memory in current string**/
     string_delete(tree->text);
+    free(tree->text);
+    free(tree);
+    TREE_ALLOCATED_MEMORY -= 2;
+   /* fprintf(stderr,"\nTREE_ALLOCATED_MEMORY:: %d", TREE_ALLOCATED_MEMORY);*/
 }
 
 cartesian_tree * cart_tree_remove(cartesian_tree** tree, long left_ind, long right_ind,int need_delete)
@@ -271,7 +278,7 @@ cartesian_tree * cart_tree_remove(cartesian_tree** tree, long left_ind, long rig
     }
 }
 /****find****/
-void cart_tree_access(cartesian_tree** tree_ptr, long index, string** s)
+void cart_tree_access(cartesian_tree** tree_ptr, long index, string** _returned_str)
 {
     long left_ind = index;
     cartesian_tree* tree;
@@ -291,19 +298,19 @@ void cart_tree_access(cartesian_tree** tree_ptr, long index, string** s)
 
     if (left_ind < 0)
     {
-        cart_tree_access(&(tree->left), index, s);
+        cart_tree_access(&(tree->left), index, _returned_str);
         return;
     }
 
     if (!left_ind)
     {
-        *s = tree->text;
+        *_returned_str = tree->text;
         return;
     }
 
     if (left_ind > 0)
     {
-        cart_tree_access(&(tree->right), (long)(left_ind - 1), s);
+        cart_tree_access(&(tree->right), (long)(left_ind - 1), _returned_str);
         return;
     }   
 

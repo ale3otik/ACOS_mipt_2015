@@ -15,7 +15,7 @@ void editor_delete_range(string * command_str,long offset, data_container ** dat
 void editor_delete_braces(string * command_str, long offset, data_container ** data);
 int  special_read(string * command_str,long offset,data_container ** data, char * cur_filen);
 void special_write(string * command_str,long,char *cur_file_name,data_container * data);
-void special_exit();
+void special_exit(string *, data_container ** data);
 void special_help();
 
 
@@ -34,8 +34,8 @@ int general_function(char* cur_file_name,data_container * data)
     while(TRUE)
     {
         string_construct(&command_str);
-        printf("\n>>editor:");
-       /* tree_print(stderr,data);*/
+        fprintf(stderr,"\n>>editor:");
+
         if(!string_get(stdin,&command_str)) /*read command*/
         { 
             entered_command = EXIT;
@@ -79,7 +79,7 @@ int general_function(char* cur_file_name,data_container * data)
                 special_write(&command_str,offset,cur_file_name,data);
                 break;
             case EXIT :
-                special_exit();
+                special_exit(&command_str, &data);
                 return EXIT;
                 break;
             case HELP :
@@ -151,6 +151,7 @@ void editor_print_pages(data_container ** data, long start_index)
                 }  
             }
         }
+        
         conv_list_to_tree(&begin_list, &end_list, data);
     }
 }
@@ -228,6 +229,7 @@ void editor_edit_string(string * command,long offset, data_container ** data)
     if(number_of_operation == ERROR) 
     {
         fprintf(stderr,"\n unknow edit_string command : \"%s\" ",name_commad);
+        free(name_commad);
         return;
     }
 
@@ -235,6 +237,7 @@ void editor_edit_string(string * command,long offset, data_container ** data)
     if(array_position < 0 || array_position >= cartesian_size(*data))
     {
         fprintf(stderr,"\nERROR:wrong array_position %ld ", array_position);
+        free(name_commad);
         return;
     }
 
@@ -245,6 +248,7 @@ void editor_edit_string(string * command,long offset, data_container ** data)
     {
         special_edit_insert_function(command,offset,data,array_position,string_position);
         fprintf(stderr, "\nSucces insert ");
+        free(name_commad);
         return;
     }
 
@@ -260,6 +264,7 @@ void editor_edit_string(string * command,long offset, data_container ** data)
         if(string_position >= finding_string->size || string_position < 0)
         {
             fprintf(stderr, "\nERROR:wrong number");
+            free(name_commad);
             return;
         }
         string_remove(finding_string, string_position);
@@ -273,6 +278,7 @@ void editor_edit_string(string * command,long offset, data_container ** data)
         if(string_position >= finding_string->size || string_position < 0)
         {
             fprintf(stderr, "\nERROR:wrong number");
+            free(name_commad);
             return;
         }
 
@@ -280,6 +286,7 @@ void editor_edit_string(string * command,long offset, data_container ** data)
         if( command->data[offset] == 0)
         {
             fprintf(stderr,"\nERROR: empty symb ");
+            free(name_commad);
             return;
         }
 
@@ -288,15 +295,17 @@ void editor_edit_string(string * command,long offset, data_container ** data)
         offset = string_get_next_position(finding_string,offset);
         if(command->data[offset] != 0 && command->data[offset] != '#')
         {
-            fprintf(stderr, "\nERROR: wring format of str");
+            fprintf(stderr, "\nERROR: wrong format of str");
+            free(name_commad);
             return;
         }
 
         finding_string->data[string_position] = inserting_char;
         
         fprintf(stderr, "\nSucces replace ");
-        return;
+
     }
+    free(name_commad);
 }
    
 
@@ -315,7 +324,6 @@ void editor_replace(string * command_str,long offset, data_container ** data)
     if(offset < 0) return;
 
     searching_str.data = NULL;
-    string_construct(&searching_str);
     if(command_str->data[offset] == '^' || command_str->data[offset] == '$')
     {
         if(command_str->data[offset] == '^')
@@ -335,6 +343,7 @@ void editor_replace(string * command_str,long offset, data_container ** data)
         if(command_str->data[offset] != '\"')
         {
             fprintf(stderr,"\nERROR:use \"YOUR STRING\" (1)");
+            string_delete(&searching_str);
             return;
         }
 
@@ -389,6 +398,8 @@ void editor_replace(string * command_str,long offset, data_container ** data)
         long next_enter = 0;
         char * next_enter_pointer= NULL;
         char * cur_string_ptr = NULL;
+        cartesian_tree * buf = NULL;
+        
         new_string.data = NULL;
         string_construct(&new_string);
 
@@ -463,13 +474,16 @@ void editor_replace(string * command_str,long offset, data_container ** data)
             new_list_elem->left = get_list->left;
             new_list_elem->right = get_list;
             get_list->left = new_list_elem;
-            
-            string_delete(get_list->text);
 
             if(get_list->left != NULL) (get_list->left)->right = get_list->right;
             if(get_list->right != NULL) (get_list->right)->left = get_list->left;
             end_list = get_list->left;
+            buf = get_list;
             get_list = get_list->right;
+
+            buf->left = NULL;
+            buf->right = NULL;
+            tree_delete(buf);
 
         }
         string_delete(&new_string);
@@ -624,9 +638,11 @@ void special_write(string * command_str,long offset,char * cur_file_name,data_co
     }
 }
 
-void special_exit()
+void special_exit(string * command_str,data_container ** data)
 {
     fprintf(stderr, "\n");
+    tree_delete(*data);
+    string_delete(command_str);
     /* Maby safe?*/
 }
 void special_help( )

@@ -32,8 +32,7 @@ int main(int argc,char ** argv)
     switch (next_action)
     {
         case EXIT:
-            tree_delete(data);
-            
+            if(fp != NULL) fclose(fp);
             return 0;
         default:
             fprintf(stderr,"\nNEXT_ACTION IS NOT DEFINED\n");
