@@ -2,6 +2,9 @@
 #include <string.h>
 #include <termios.h>
 #include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <limits.h>
 #include "my_types.h"
 
 int parse_command(string,long *);
@@ -34,7 +37,7 @@ int general_function(char* cur_file_name,data_container * data)
     while(TRUE)
     {
         string_construct(&command_str);
-        fprintf(stderr,"\n>>editor:");
+        fprintf(stdout,"\n>>editor:");
 
         if(!string_get(stdin,&command_str)) /*read command*/
         { 
@@ -88,7 +91,7 @@ int general_function(char* cur_file_name,data_container * data)
             case NO_ACTIONS_NEED:
                 break;
             default:
-                fprintf(stderr,"unknown command: \"%s\"\n",command_str.data);
+                fprintf(stdout,"unknown command: \"%s\"\n",command_str.data);
         }
     }
     return 0;
@@ -97,24 +100,58 @@ int general_function(char* cur_file_name,data_container * data)
 void editor_print_pages(data_container ** data, long start_index)
 {
     struct termios old_term,new_term;
-    char ch;
     winsize window_size;  
+    struct stat input_device_stat;
+    struct stat output_device_stat;
+
     int is_exit = FALSE;
     long count_printed_real_strings = start_index;
     int balance = 0;
     int is_need_new_str = FALSE;
+    char ch;
+
+    int column_size = 0;
+    int row_size = 0;
+
+    int input_is_terminal = FALSE;
+    int output_is_terminal = FALSE;
+
     cartesian_tree * list = NULL;
     cartesian_tree * end_list = NULL;
     cartesian_tree * begin_list = NULL;
 
-    ioctl(1,TIOCGWINSZ,&window_size);
-    tcgetattr( STDIN_FILENO, &old_term);
-    new_term = old_term;
-    new_term.c_lflag &= ~( ICANON | ECHO );
-    
+    fstat(0, &input_device_stat);
+    fstat(1, &output_device_stat);
+
+    if( S_ISCHR(input_device_stat.st_mode) || S_ISBLK(input_device_stat.st_mode))
+    {
+        input_is_terminal = TRUE;
+    }
+    if( S_ISCHR(output_device_stat.st_mode) || S_ISBLK (output_device_stat.st_mode))
+    {
+        output_is_terminal = TRUE;
+    }
+
+    if(output_is_terminal)
+    {
+        ioctl(1,TIOCGWINSZ,&window_size);
+        tcgetattr( STDIN_FILENO, &old_term);
+        new_term = old_term;
+        new_term.c_lflag &= ~( ICANON | ECHO );
+
+        row_size = window_size.ws_row;
+        column_size = window_size.ws_col;   
+    }
+    else
+    {
+        /*It 's magic big number */
+        row_size = INT_MAX/2;
+        column_size = INT_MAX/2;
+    }
+
     if(cartesian_size(*data) == 0)
     {
-        fprintf(stderr, "\nhave no strings");
+        fprintf(stdout, "\nhave no strings");
     }
     else
     {
@@ -123,32 +160,41 @@ void editor_print_pages(data_container ** data, long start_index)
 
         while(!is_exit)
         {   
-            system("clear");
-            balance = window_size.ws_row ;
+            if(output_is_terminal && input_is_terminal) 
+            {
+                system("clear");
+            }
+            else printf("\n");
+
+            balance = row_size;
             while(balance > 0 && list != NULL)
             {
-                is_need_new_str = super_print_string(list->text,&window_size,&count_printed_real_strings, &balance);
+                is_need_new_str = super_print_string(list->text,column_size,row_size,&count_printed_real_strings, &balance);
                 if(is_need_new_str)
                 {
                     list = list->right;
                 }
             }
             if(list == NULL) is_exit = TRUE;
-            tcsetattr( STDIN_FILENO, TCSANOW, &new_term );
-            while(TRUE)
+            
+            if(output_is_terminal && input_is_terminal)
             {
-                ch = getchar();
-                if(ch == ' ')
+                tcsetattr( STDIN_FILENO, TCSANOW, &new_term );
+                while(TRUE)
                 {
-                    tcsetattr( STDIN_FILENO, TCSANOW, &old_term );
-                    break;
+                    ch = getchar();
+                    if(ch == ' ')
+                    {
+                        tcsetattr( STDIN_FILENO, TCSANOW, &old_term );
+                        break;
+                    }
+                    if(ch == 'q' || ch == 'Q')
+                    {
+                        tcsetattr( STDIN_FILENO, TCSANOW, &old_term );
+                        is_exit = TRUE;
+                        break;
+                    }  
                 }
-                if(ch == 'q' || ch == 'Q')
-                {
-                    tcsetattr( STDIN_FILENO, TCSANOW, &old_term );
-                    is_exit = TRUE;
-                    break;
-                }  
             }
         }
         
@@ -173,15 +219,17 @@ void editor_print_range(string * command_str,long offset, data_container ** data
 void editor_insert_after(string* command,long offset,data_container ** data)
 {
     long position = -1;
+    int check_get_number = 0;
+
     offset = string_get_next_position(command,offset);
-    position = string_get_number(command, &offset);
-    if(position == -1) 
+    check_get_number = string_get_number(command, &offset, &position);
+    if(check_get_number == ERROR) 
         {
             position = cartesian_size(*data);
         }
     if(position < 0 || position > cartesian_size(*data))
     {
-        fprintf(stderr, "\nERROR: wrong position %ld ",position);
+        fprintf(stdout, "\nERROR: wrong position %ld ",position);
         return;
     }
 
@@ -197,6 +245,7 @@ void editor_edit_string(string * command,long offset, data_container ** data)
     long string_position = -1;
     char * name_commad = NULL;
     int number_of_operation = ERROR;
+    int check_get_number[2];
 
     string * finding_string = NULL;
 
@@ -204,10 +253,10 @@ void editor_edit_string(string * command,long offset, data_container ** data)
     name_commad = get_next_word(command,&offset);
 
     offset = string_get_next_position(command, offset);
-    array_position = string_get_number(command, &offset);
+    check_get_number[0] = string_get_number(command, &offset, &array_position);
 
     offset = string_get_next_position(command, offset);
-    string_position = string_get_number(command, &offset);
+     check_get_number[1] = string_get_number(command, &offset,&string_position);
 
     /*cath the command*/
     if( ! strncmp(name_commad,"insert",MAX_NAME_LENGTH))
@@ -228,15 +277,16 @@ void editor_edit_string(string * command,long offset, data_container ** data)
 
     if(number_of_operation == ERROR) 
     {
-        fprintf(stderr,"\n unknow edit_string command : \"%s\" ",name_commad);
+        fprintf(stdout,"\n unknow edit_string command : \"%s\" ",name_commad);
         free(name_commad);
         return;
     }
 
     --array_position;
-    if(array_position < 0 || array_position >= cartesian_size(*data))
+    if(check_get_number[0]== ERROR || array_position < 0 || array_position >= cartesian_size(*data)
+        || (check_get_number[1] == SUCCES && string_position < 0))
     {
-        fprintf(stderr,"\nERROR:wrong array_position %ld ", array_position);
+        fprintf(stdout,"\nERROR:wrong array_position or string position");
         free(name_commad);
         return;
     }
@@ -247,37 +297,38 @@ void editor_edit_string(string * command,long offset, data_container ** data)
     if(number_of_operation == _EDIT_INSERT)
     {
         special_edit_insert_function(command,offset,data,array_position,string_position);
-        fprintf(stderr, "\nSucces insert ");
+        fprintf(stdout, "\nSucces insert ");
         free(name_commad);
         return;
     }
 
     cart_tree_access(data, array_position, &finding_string);
-    if(string_position <  0)
+
+    if(check_get_number[1] == ERROR)
     {
         string_position = finding_string->size;
     }
-
+    
     if(number_of_operation == _EDIT_DELETE)
     {
         string_position--;
-        if(string_position >= finding_string->size || string_position < 0)
+        if(check_get_number[1] == ERROR || string_position >= finding_string->size || string_position < 0)
         {
-            fprintf(stderr, "\nERROR:wrong number");
+            fprintf(stdout, "\nERROR:wrong number");
             free(name_commad);
             return;
         }
         string_remove(finding_string, string_position);
-        fprintf(stderr, "\nSucces delete");
+        fprintf(stdout, "\nSucces delete");
     }
     if(number_of_operation == _EDIT_REPLACE)
     {
         char inserting_char;
 
         string_position--;
-        if(string_position >= finding_string->size || string_position < 0)
+        if(check_get_number[1] == ERROR ||string_position >= finding_string->size || string_position < 0)
         {
-            fprintf(stderr, "\nERROR:wrong number");
+            fprintf(stdout, "\nERROR:wrong number");
             free(name_commad);
             return;
         }
@@ -285,24 +336,32 @@ void editor_edit_string(string * command,long offset, data_container ** data)
         offset = string_get_next_position(finding_string, offset);
         if( command->data[offset] == 0)
         {
-            fprintf(stderr,"\nERROR: empty symb ");
+            fprintf(stdout,"\nERROR: empty symb ");
             free(name_commad);
             return;
         }
 
         inserting_char = command->data[offset];
         ++offset;
-        offset = string_get_next_position(finding_string,offset);
-        if(command->data[offset] != 0 && command->data[offset] != '#')
+        if(inserting_char == '\\' && command->data[offset] != 0) 
         {
-            fprintf(stderr, "\nERROR: wrong format of str");
+            inserting_char = command->data[offset]; 
+            if(inserting_char == 'n') inserting_char = '\n';
+            else if(inserting_char == 't') inserting_char = '\t';
+        ++offset;
+        }
+
+        offset = string_get_next_position(finding_string,offset);
+        if(command->data[offset] != 0 && command->data[offset] != '#' && command->data[offset] != ' ')
+        {
+            fprintf(stdout, "\nERROR: wrong format of str");
             free(name_commad);
             return;
         }
 
         finding_string->data[string_position] = inserting_char;
         
-        fprintf(stderr, "\nSucces replace ");
+        fprintf(stdout, "\nSucces replace ");
 
     }
     free(name_commad);
@@ -320,10 +379,15 @@ void editor_replace(string * command_str,long offset, data_container ** data)
     long  range[2];
     short replace_mode = NORMAL_REPLACE_MODE;
 
+    replacing_str.data = NULL;
+    searching_str.data = NULL;
+    string_construct(&searching_str);
+
     offset = get_ranges(range, command_str, *data,offset);
     if(offset < 0) return;
 
-    searching_str.data = NULL;
+    offset = string_get_next_position(command_str,  offset);
+
     if(command_str->data[offset] == '^' || command_str->data[offset] == '$')
     {
         if(command_str->data[offset] == '^')
@@ -342,18 +406,18 @@ void editor_replace(string * command_str,long offset, data_container ** data)
         offset = string_get_next_position(command_str,offset);
         if(command_str->data[offset] != '\"')
         {
-            fprintf(stderr,"\nERROR:use \"YOUR STRING\" (1)");
+            fprintf(stdout,"\nERROR:SYNTAX:use \"YOUR STRING\" (1)");
             string_delete(&searching_str);
             return;
         }
 
         ++offset;
-        string_construct(&searching_str);
-        smart_get_string(&searching_str,command_str, &offset,ALL_STRING);
 
+        smart_get_string(&searching_str,command_str, &offset,ALL_STRING);
+                
         if(command_str->data[offset] != '\"')
         {
-            fprintf(stderr,"\nERROR:use \"YOUR STRING\" (2)");
+            fprintf(stdout,"\nERROR:SYNTAX:use \"YOUR STRING\" (2)");
             string_delete(&searching_str);
             return;
         }
@@ -363,19 +427,18 @@ void editor_replace(string * command_str,long offset, data_container ** data)
     offset = string_get_next_position(command_str, offset);
     if( command_str->data[offset] != '\"')
     {
-        fprintf(stderr,"\nERROR:use \"YOUR STRING\" (3)");
+        fprintf(stdout,"\nERROR:SYNTAX:use \"YOUR STRING\" (3)");
         string_delete(&searching_str);
         return;
     }
     
     ++offset;
-    replacing_str.data = NULL;
     string_construct(&replacing_str);
     smart_get_string(&replacing_str, command_str, &offset,ALL_STRING);
 
     if( command_str->data[offset] != '\"')
     {
-        fprintf(stderr,"\nERROR:use \"YOUR STRING\" (4)");
+        fprintf(stdout,"\nERROR:SYNTAX:use \"YOUR STRING\" (4)");
         string_delete(&searching_str);
         string_delete(&replacing_str);
         return;
@@ -389,7 +452,7 @@ void editor_replace(string * command_str,long offset, data_container ** data)
 
     if(searching_str.size == 0 && replace_mode == NORMAL_REPLACE_MODE)
     {
-        fprintf(stderr,"\nERROR: wrong searching str");
+        fprintf(stdout,"\nERROR: wrong searching str");
         /* insert back*/
     }
     else
@@ -399,12 +462,13 @@ void editor_replace(string * command_str,long offset, data_container ** data)
         char * next_enter_pointer= NULL;
         char * cur_string_ptr = NULL;
         cartesian_tree * buf = NULL;
-        
+
         new_string.data = NULL;
         string_construct(&new_string);
 
         while(get_list != NULL) /*add all modifications to old strings*/
         {
+            int count_replacig = 0;
             next_enter = 0;
             next_enter_pointer = NULL;
             cur_string_ptr = get_list->text->data;
@@ -417,13 +481,20 @@ void editor_replace(string * command_str,long offset, data_container ** data)
                     else next_enter = - 1;
                 }
                 else if(replace_mode == BEGIN_REPLACE_MODE)
-                {
+                {    
                     next_enter = 0;
+                    if(count_replacig > 0) break;
+                    
+                    ++count_replacig;
                 }
                 else
                 {
                     next_enter = get_list->text->size;
+                    if(count_replacig > 0) break;
+
+                    ++count_replacig;
                 }
+
                 if(next_enter >= 0)
                 {
                     /*stupid copying without splitting by '\n' */
@@ -440,6 +511,7 @@ void editor_replace(string * command_str,long offset, data_container ** data)
         {
             cartesian_tree * new_list_elem = NULL;
             int i;
+
             for(i = 0;i<get_list->text->size;++i)
             {
 
@@ -484,15 +556,14 @@ void editor_replace(string * command_str,long offset, data_container ** data)
             buf->left = NULL;
             buf->right = NULL;
             tree_delete(buf);
-
         }
         string_delete(&new_string);
     }
+
     conv_list_to_tree(&old_get_list, &end_list, &get_tree);
     cart_tree_insert_tree(data, &get_tree, range[0]);
     string_delete(&searching_str);
     string_delete(&replacing_str);
-
 }
 
 
@@ -516,7 +587,12 @@ void editor_delete_range(string * command_str,long offset, data_container ** dat
     range[1] = -1;
     offset = string_get_next_position(command_str,offset);
 
-    range[0] = string_get_number(command_str,&offset);
+    offset = get_ranges(range, command_str, *data, offset);
+    if(offset < 0) return;
+
+    ++range[0]; 
+    ++range[1];
+   /* range[0] = string_get_number(command_str,&offset);
     offset = string_get_next_position(command_str,offset);
     if(command_str->data[offset] != '\0')
     {
@@ -525,18 +601,18 @@ void editor_delete_range(string * command_str,long offset, data_container ** dat
     else
     {
         range[1] = cartesian_size(*data) ;
-    }
+    }*/
 
 
     if(range[0] > range[1] || range[0] <= 0 || range[1] <0 || range[1] > cartesian_size(*data))
     {
-        fprintf(stderr,"\nERROR: wrong range %ld %ld",range[0],range[1]);
+        fprintf(stdout,"\nERROR: wrong range %ld %ld",range[0],range[1]);
         return;
     }
     
     cart_tree_remove(data,range[0], range[1],TRUE);
 
-    fprintf(stderr,"\n Removed succes : %ld - %ld ",range[0],range[1]);
+    fprintf(stdout,"\n Removed succes : %ld - %ld ",range[0],range[1]);
 }
 
 
@@ -566,12 +642,12 @@ int special_read(string * command_str,long offset, data_container ** data,char *
     }
     else
     {
-        fprintf(stderr,"\nERROR: no file chosen");
+        fprintf(stdout,"\nERROR: no file chosen");
         return ERROR;
     }
     if(read_file(fp, data) == SUCCES)
     {
-        fprintf(stderr,"\nsucces reading");
+        fprintf(stdout,"\nsucces reading");
         if(cur_file_name != NULL)
         {
             strncpy(cur_file_name,file_name,MAX_NAME_LENGTH);
@@ -580,7 +656,7 @@ int special_read(string * command_str,long offset, data_container ** data,char *
     }
     else
     {
-        fprintf(stderr,"\nfailure reading");
+        fprintf(stdout,"\nfailure reading");
         return ERROR;
     }
 }
@@ -617,14 +693,14 @@ void special_write(string * command_str,long offset,char * cur_file_name,data_co
         }
         else
         {
-            fprintf(stderr,"\nsucces writing to \"%s\"\n",file_name);
+            fprintf(stdout,"\nsucces writing to \"%s\"\n",file_name);
         }
     }
     if(check == ERROR)
     {
         if(!strncmp(cur_file_name,"",strlen(cur_file_name)))
         {
-            fprintf(stderr,"\nNo curret file");
+            fprintf(stdout,"\nNo curret file");
             return;
         }
       
@@ -633,14 +709,14 @@ void special_write(string * command_str,long offset,char * cur_file_name,data_co
     
     if(check == ERROR)
     {
-        fprintf(stderr,"\ncan't open \"%s\" to write",cur_file_name);
+        fprintf(stdout,"\ncan't open \"%s\" to write",cur_file_name);
         return;
     }
 }
 
 void special_exit(string * command_str,data_container ** data)
 {
-    fprintf(stderr, "\n");
+    fprintf(stdout, "\n");
     tree_delete(*data);
     string_delete(command_str);
     /* Maby safe?*/
@@ -659,7 +735,7 @@ int parse_command(string command, long * offset)
      /* special commans*/
     if(!strncmp(command.data +*offset,"for(int i = 0;i < n; ++i)",strlen("for(int i = 0;i < n; ++i)")))
     {
-        fprintf(stderr,"\n\n !!!Congratulations!!! You've won 1488228$\n to catch yor prise\
+        fprintf(stdout,"\n\n !!!Congratulations!!! You've won 1488228$\n to catch yor prise\
 send 100p to +79099559784 and next 2 minuts the prise will knock to your door\n");
         return NO_ACTIONS_NEED;
     }

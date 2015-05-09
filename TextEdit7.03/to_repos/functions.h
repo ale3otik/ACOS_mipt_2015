@@ -13,10 +13,10 @@ void smart_get_string(string * dest,string * command_str,long * offset,int param
 long string_get_next_position(struct string * str,long offset); /* to ignore spaces*/
 int string_get(FILE * file_input,string * _str); /* to read string sny size from file*/
 
-long string_get_number(string * command,long * offset); /* to read number from string*/
 
 char * get_next_word(string * str, long * offset); /* to copy next word from sting to char[] */
 
+int string_get_number(string * command,long * offset, long * number);
 
 /*used by insert_after command*/
 void insert_after_special_function(string* command,long offset,data_container ** data, long position); 
@@ -34,5 +34,5 @@ long get_ranges(long * range ,string * command_str, cartesian_tree * data, long 
 /*used by delete_braces command*/
 void tree_delete_braces(cartesian_tree** tree_ptr);
 /* used by print_pages, this function remember last printed position in last string and can continue*/
-int super_print_string(string * printed_string, winsize * size_of_term,long * num,int * balance);
+int super_print_string(string * printed_string, int col_size_of_term,int row_size_of_term,long * num,int * balance);
 #endif

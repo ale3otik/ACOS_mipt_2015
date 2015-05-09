@@ -35,7 +35,7 @@ int main(int argc,char ** argv)
             if(fp != NULL) fclose(fp);
             return 0;
         default:
-            fprintf(stderr,"\nNEXT_ACTION IS NOT DEFINED\n");
+            fprintf(stdout,"\nNEXT_ACTION IS NOT DEFINED\n");
             return -1;
     }
 

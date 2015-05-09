@@ -1,4 +1,3 @@
-
 #include "my_types.h"
 static int TREE_ALLOCATED_MEMORY = 0;
 
@@ -26,7 +25,7 @@ void cart_tree_construct(cartesian_tree** tree,string* str)
 
 
     TREE_ALLOCATED_MEMORY += 2;
-   /* fprintf(stderr,"\nTREE_ALLOCATED_MEMORY::%d", TREE_ALLOCATED_MEMORY);*/
+   /* fprintf(stdout,"\nTREE_ALLOCATED_MEMORY::%d", TREE_ALLOCATED_MEMORY);*/
 
     insert_str->data = NULL;
     string_construct(insert_str);
@@ -37,7 +36,6 @@ void cart_tree_construct(cartesian_tree** tree,string* str)
     new_tree->right = NULL;
     new_tree->priority = rand();
     *tree = new_tree;
-
 }
 
 /**basic merge of two lists of strings that relized in the form of cartesian_tree*/
@@ -198,7 +196,7 @@ void print_tree(FILE* fp,cartesian_tree* tree)
 
     if (tree == NULL)
     {
-        fprintf(stderr,"List of strings is empty.\n");
+        fprintf(stdout,"List of strings is empty.\n");
         return;
     }
     
@@ -248,7 +246,7 @@ void tree_delete(cartesian_tree* tree)
     free(tree->text);
     free(tree);
     TREE_ALLOCATED_MEMORY -= 2;
-   /* fprintf(stderr,"\nTREE_ALLOCATED_MEMORY:: %d", TREE_ALLOCATED_MEMORY);*/
+   /* fprintf(stdout,"\nTREE_ALLOCATED_MEMORY:: %d", TREE_ALLOCATED_MEMORY);*/
 }
 
 cartesian_tree * cart_tree_remove(cartesian_tree** tree, long left_ind, long right_ind,int need_delete)

@@ -21,7 +21,7 @@ FILE * open_file( char * file_name,short state)
         }
         if(fp == NULL)
         {
-            fprintf(stderr,"\nERROR: can't open file: %s\n",file_name);
+            fprintf(stdout,"\nERROR: can't open file: %s\n",file_name);
         }
     }
     return fp;
@@ -52,7 +52,7 @@ int read_file(FILE* fp, data_container ** data)
             }while(buf[strlen(buf)-1] != '\n');
             /*getchar();*/
                 cart_tree_insert(data,&new_string,k); /* add new string to data memory*/
-               /* fprintf(stderr,"\n%ld\n",(*data)->size);*/
+               /* fprintf(stdout,"\n%ld\n",(*data)->size);*/
                 ++k;
                 string_construct(&new_string); /* clear and make new*/        
         }

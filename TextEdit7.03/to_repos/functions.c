@@ -15,7 +15,7 @@ long string_get_next_position(string * str,long offset)
 {
 	if(str == NULL)
 	{
-		fprintf(stderr, "ERROR: nullptr string in func: string_get_next_position" );
+		fprintf(stdout, "ERROR: nullptr string in func: string_get_next_position" );
 		exit(1);
 	}
     while(str->data[offset] != '\0' && (str->data[offset] == ' ' || str->data[offset] == '\t'))
@@ -79,20 +79,21 @@ void smart_get_filename(char * file_name,string * command_str,long * offset)
 void smart_get_string(string * dest,string * command_str,long * offset, int param)
 {
 	*offset = string_get_next_position(command_str, *offset);
+
 	while(1)
 	{
 		if(command_str->data[*offset] == '\"' || command_str->data[*offset] == 0) return;
 
-		if(command_str->data[*offset] == '\\' )
+		if(command_str->data[*offset] == '\\' ) /*special symbol*/
 		{
-			++*offset;
+			++ (*offset);
 			if(command_str->data[*offset] == '\0' ) return;
 			if(command_str->data[*offset] == 'n') 
 			{
 				if(param == ALL_STRING)
 				{
 					string_push_back(dest, '\n');
-					++*offset;
+					++ (*offset);
 					continue;
 				}
 				else
@@ -101,28 +102,47 @@ void smart_get_string(string * dest,string * command_str,long * offset, int para
 				}
 			}
 		}
+
 		string_push_back(dest, command_str->data[*offset]);
-		++ *offset;
+		++ (*offset);
 	}
 }
 
 
-long string_get_number(string * command,long * offset)
+int string_get_number(string * command,long * offset, long * number)
  {
- 	if(!isdigit(command->data[*offset]))
+    int digit = 1;
+    int check = FALSE;
+
+    *number = 0;
+
+ 	if(!isdigit(command->data[*offset]) && command->data[*offset] != '-')
  	{
- 		return -1;
+ 		return ERROR;
  	}
  	else
  	{
- 		int number = 0;
+        if(command->data[*offset] == '-')
+        {
+           digit = -1;
+           ++ *offset;
+        }
+
  		for(;isdigit(command->data[*offset]);++ *offset)
  		{
- 			number *= 10;
- 			number += command->data[*offset] - '0';
+ 			*number *= 10;
+ 			*number += command->data[*offset] - '0';
+            check = TRUE;
  		}
- 		return number;
 
+        *number *= digit;
+        if((command->data[*offset] != 0 && command->data[*offset] != ' ' 
+            && command->data[*offset] != '\t') || check == FALSE)
+            { 
+                return ERROR;
+            }
+
+ 		return SUCCES;
  	}
  }
 
@@ -134,7 +154,7 @@ char * get_next_word(string * str, long * offset)
 	char * word = (char*) malloc(sizeof(char) * (MAX_NAME_LENGTH+1));
 	if(word == NULL)
 	{
-		fprintf(stderr,"\nERROR: malloc in get_next_word %d ",MAX_NAME_LENGTH+1);
+		fprintf(stdout,"\nERROR: malloc in get_next_word %d ",MAX_NAME_LENGTH+1);
 		exit(1);
 	}
 
@@ -159,7 +179,7 @@ void insert_after_special_function(string* command,long offset,data_container **
   	offset = string_get_next_position(command,offset);
     if(command->data[offset] != '\"')
     {
-        fprintf(stderr,"\nNo strings added. Use \"YOUR_ADDED_STR\" to insert str");
+        fprintf(stdout,"\nNo strings added. Use \"YOUR_ADDED_STR\" to insert str");
         return;
     }
 
@@ -186,7 +206,7 @@ void insert_after_special_function(string* command,long offset,data_container **
                     offset = 0;
                     ++count_strings;
                     ++position;
-                    fprintf(stderr,"\nstr %ld: ",count_strings+1); 
+                    fprintf(stdout,"\nstr %ld: ",count_strings+1); 
                     string_get(stdin,command); /*read command*/
                     continue;
                 }
@@ -211,7 +231,7 @@ void insert_after_special_function(string* command,long offset,data_container **
             }
             string_delete(&inserting_string);
 
-            fprintf(stderr,"\ninserted %ld succes",count_strings+1);
+            fprintf(stdout,"\ninserted %ld succes",count_strings+1);
             return;
         }
         --offset;
@@ -232,7 +252,7 @@ void insert_after_special_function(string* command,long offset,data_container **
         }
         string_delete(&inserting_string);
 
-        fprintf(stderr,"\ninserted %ld succes",count_strings+1);
+        fprintf(stdout,"\ninserted %ld succes",count_strings+1);
         return;
     }
 }
@@ -258,13 +278,13 @@ int special_edit_insert_function(string * command,
 
 	if(string_position > finding_string->size)
     {
-        fprintf(stderr,"\nERROR: wrong index to insert %ld ",string_position);
+        fprintf(stdout,"\nERROR: wrong index to insert %ld ",string_position);
         return ERROR;
     }
         
         if(command->data[offset++] != '\"')
         {
-            fprintf(stderr,"\nERROR: use \"YOUR_INSERTING_STRING\"");
+            fprintf(stdout,"\nERROR: use \"YOUR_INSERTING_STRING\"");
             return 0;
         }
 
@@ -293,7 +313,7 @@ int special_edit_insert_function(string * command,
 
         if(command->data[offset] == '\0')
         {
-            fprintf(stderr,"\nERROR: use \"YOUR_INSERTING_STRING\"");
+            fprintf(stdout,"\nERROR: use \"YOUR_INSERTING_STRING\"");
             return 0;
         }
 
@@ -304,7 +324,7 @@ int special_edit_insert_function(string * command,
         {
             if(finding_string->data[index] == '\n')
             {
-                /*fprintf(stderr,"<%ld>\n",cartesian_size(*data));*/
+                /*fprintf(stdout,"<%ld>\n",cartesian_size(*data));*/
                 cart_tree_insert(data, &string_push_in_arr, array_position);
                 ++array_position;
                 string_construct(&string_push_in_arr);
@@ -328,25 +348,25 @@ int special_edit_insert_function(string * command,
 
 long get_ranges(long * range,string * command_str, cartesian_tree * data, long offset)
 {
-    range[0] = -1;
-    range[1] = -1;
+    int status[2];
+    range[0] = 1;
+    range[1] = 2;
+
     offset = string_get_next_position(command_str,offset);
 
-    range[0] = string_get_number(command_str,&offset);
+    status[0] = string_get_number(command_str,&offset, &range[0]);
     offset = string_get_next_position(command_str,offset);
-    range[1] = string_get_number(command_str, &offset);
+    status[1] = string_get_number(command_str, &offset, &range[1]);
 
-    if(range[0] == -1) range[0] = 1;
-    if(range[1] == -1)
-    {
-        range[1] = cartesian_size(data);
-    }
+    if(status[0] == ERROR) range[0] = 1;
+    if(status[1] == ERROR) range[1] = cartesian_size(data);
+
     --range[0];
     --range[1];
 
     if(range[0] > range[1] || range[0] <0 || range[1] <0 || range[1] >= cartesian_size(data))
     {
-        fprintf(stderr,"\nERROR: wrong range %ld %ld",range[0]+1,range[1]+1);
+        fprintf(stdout,"\nERROR: wrong range");
         return -1;
     }
    /* ++offset;*/
@@ -438,7 +458,7 @@ void tree_delete_braces(cartesian_tree** tree_ptr)
         is_error = string_scan_braces(&braces_deep_level, list_ptr->text);
         if(is_error)
         {
-            fprintf(stderr, "Can't do this operation: braces aren't balanced.\n");
+            fprintf(stdout, "Can't do this operation: braces aren't balanced.\n");
             break;
         }
 
@@ -447,7 +467,7 @@ void tree_delete_braces(cartesian_tree** tree_ptr)
             if(braces_deep_level > 0)
             {   
                 is_error = -1;
-                fprintf(stderr, "Can't do this operation: braces aren't balanced.\n");
+                fprintf(stdout, "Can't do this operation: braces aren't balanced.\n");
             }
             break;
         }
@@ -519,7 +539,7 @@ int count_num_symbols(long num)
 }
 
 
-int super_print_string(string * printed_string, winsize * size_of_term,long * num,int * balance) /*TRUE if need new str*/
+int super_print_string(string * printed_string, int column_size, int row_size,long * num,int * balance) /*TRUE if need new str*/
 {
     static unsigned long next_printed_index = 0;
     int count_printed_symbols = 0;
@@ -534,10 +554,10 @@ int super_print_string(string * printed_string, winsize * size_of_term,long * nu
         count_printed_symbols = strlen(printed_string->data + next_printed_index);
     }
 
-    count_printed_strings = (count_printed_symbols+size_of_term->ws_col)/size_of_term->ws_col; 
+    count_printed_strings = (count_printed_symbols+ column_size)/ column_size; 
     if(*balance - count_printed_strings >= 0)
     {
-        if(*balance != size_of_term->ws_row) 
+        if(*balance != row_size) 
         {
             fprintf(stdout,"\n");
         }
@@ -555,9 +575,9 @@ int super_print_string(string * printed_string, winsize * size_of_term,long * nu
     else
     {
         count_printed_strings = *balance;
-        count_printed_symbols  =count_printed_strings * size_of_term->ws_col;
+        count_printed_symbols = count_printed_strings *  column_size;
         
-        if(*balance != size_of_term->ws_row) 
+        if(*balance != row_size) 
         {
             fprintf(stdout,"\n");
         }

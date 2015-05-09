@@ -13,11 +13,11 @@ void string_construct(struct string* _str)
     }
     if(!(_str->data = (char*)malloc(START_STRING_SIZE * sizeof(char))))
     {
-        fprintf(stderr,"\nCRASH ERROR: malloc_error");
+        fprintf(stdout,"\nCRASH ERROR: malloc_error");
         exit(1);
     }
     ++STRING_ALLOCATED_COUNTER;
-    /*fprintf(stderr,"\nSTRING_ALLOCATED_COUNTER::%d",STRING_ALLOCATED_COUNTER);*/
+    /*fprintf(stdout,"\nSTRING_ALLOCATED_COUNTER::%d",STRING_ALLOCATED_COUNTER);*/
     _str->size = 0;
     _str->data[0] = 0;
     _str->capacity = START_STRING_SIZE;/**the real number of allocated memory*/
@@ -27,7 +27,7 @@ void string_big_push(struct string* _str, char* push_str,long size)
 {
     if(size!= 0 && push_str[size - 1] == '\n')
     { 
-        size--;
+        --size;
     }
     _str->size += size;
     if(_str->size >= _str->capacity)
@@ -70,7 +70,7 @@ void string_assign(struct string* _str, char c, long index)/**edit element in in
 {
     if(index>=_str->size)
     {
-        fprintf(stderr,"\nstring assign wrong index %lu\n",index);
+        fprintf(stdout,"\nstring assign wrong index %lu\n",index);
         exit(1);
     }
     *(_str->data + index) = c;
@@ -125,8 +125,9 @@ char * string_replace(string * source_str,long size,string * replace_str,long po
 {
     long i,k;
     string new_string;
-
+    
     new_string.data = NULL;
+    
     if(replace_str == NULL)
     {   
         string_construct(&new_string);
@@ -184,6 +185,6 @@ void string_delete(struct string* str)
         free(str->data);
         --STRING_ALLOCATED_COUNTER;
     }
-  /*  fprintf(stderr,"\nSTRING_ALLOCATED_COUNTER::%d",STRING_ALLOCATED_COUNTER);*/
+  /*  fprintf(stdout,"\nSTRING_ALLOCATED_COUNTER::%d",STRING_ALLOCATED_COUNTER);*/
 }
 

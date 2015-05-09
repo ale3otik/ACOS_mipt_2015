@@ -51,6 +51,7 @@ typedef struct cartesian_tree data_container; /* the main container of strings*/
 #define F_TO_READ 2
 #define F_TO_WRITE 3
 
+#define errprint(str) fprintf(stderr, str )
 #endif 
 
 #include "functions.h"
