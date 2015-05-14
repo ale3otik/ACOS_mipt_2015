@@ -139,7 +139,7 @@ char * string_replace(string * source_str,long size,string * replace_str,long po
         {
             source_str->data[i] = replace_str->data[k];
         }
-        for(;i<source_str->size;++i)
+        for(;i<source_str->size - (size - replace_str->size);++i)
         {
             source_str->data[i] = source_str->data[i+size - replace_str->size];
         }
