@@ -1,0 +1,62 @@
+read editor.cpp
+
+print range 10 20
+
+print range 20 30
+
+insert after 1 "aaa"
+insert after 5 "b\nbb"#adsad
+insert after 20 """aaaa
+bbbb
+cccc
+dddd"""
+delete braces 
+insert after 1 "aaaa"
+
+replace "a" "rebecks"
+replace "rebecks" "OUT_OF_STOCKS" #asadadda
+replace "." "*.*"
+replace "*" "*.*"
+replace "*" "HEREN\nDAMEN"
+
+
+edit string delete 10 4
+edit string delete 20 19
+edit string delete 30 4
+edit string delete 40 88
+edit string delete 12 4
+edit string delete 16 4
+edit string delete 88 10
+
+edit string replace 17 4 &
+edit string replace 27 19 &
+edit string replace 37 4 &
+edit string replace 47 88 &
+edit string replace 17 4 &
+edit string replace 17 4 &
+edit string replace 87 10 &
+
+edit string insert 12 0 "inset_string1" 
+edit string insert 143 0 "inset_string1"
+edit string insert 33 0 "inset_string1"
+edit string insert 13 0  "inset_string1"
+edit string insert 321 0 "inset_string1"
+edit string insert 234 0  "inset_string1"
+edit string insert 11 0 "inset_string1"
+
+replace "inset_string1" "\n\n0_O\n\n"
+
+print range 10 20
+
+print range 20 30
+print range 0 100
+print range 1 500
+print range 10 20
+print range 10 20
+print range 10 1
+
+
+write out.txt
+exit 
+#aaaaaaaaaa
+#bbbbbbbbbb
