@@ -381,11 +381,11 @@ void editor_replace(string * command_str,long offset, data_container ** data)
 
     replacing_str.data = NULL;
     searching_str.data = NULL;
-    string_construct(&searching_str);
 
     offset = get_ranges(range, command_str, *data,offset);
     if(offset < 0) return;
 
+    string_construct(&searching_str);
     offset = string_get_next_position(command_str,  offset);
 
     if(command_str->data[offset] == '^' || command_str->data[offset] == '$')
