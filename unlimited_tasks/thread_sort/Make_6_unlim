@@ -1,0 +1,2 @@
+all:
+	gcc -o0 -g 6_unlim_first.c bheap.c -o t6_unlim -lpthread

@@ -1,0 +1,2 @@
+all:	
+	gcc -o0 -g smart_panda_sort.c -o the_second_variant -lpthread
