@@ -27,6 +27,9 @@ int main()
 	int i;
 	int pipe_fd[2];
 	struct sigaction action;
+    /*!!!
+     *  Чего-это за подчёркивания такие!
+     */
 	action.__sigaction_u.__sa_sigaction = action_signal;
 	action.sa_mask = 0;
 	action.sa_flags = 0;
