@@ -43,7 +43,12 @@ void * handler(void * my_ind_get)
 	while(1)
 	{
 		read_buffer = (char *) malloc(SIZE_MSG);
-		if(read_buffer = NULL) delete_all();
+
+		if(read_buffer == NULL)
+        {
+            delete_all();
+        }
+
 		size  = read(connections_fd[my_ind],read_buffer,sizeof(read_buffer));
 		
 		if(size == 0)
@@ -84,8 +89,10 @@ int main(int argc, char ** argv)
 		return -1;
 	}
 	listen(socket_id,5);
-
-		for(int i = 0; i < NUM_CONNECTIONS; ++i)
+    
+    {
+        int i;
+		for(i = 0; i < NUM_CONNECTIONS; ++i)
 		{
 			connections_fd[i] = accept(socket_id,(struct sockaddr *)&clients[i],&len);
 			if(pthread_create(&threads[i],NULL,handler,(void*)i))
@@ -96,7 +103,7 @@ int main(int argc, char ** argv)
 				return -1;
 			}
 		}
-
+    }
 		last_fd = accept(socket_id,NULL,&len);
 		write(last_fd,"you looooose!",sizeof("you looooose!"));
 		close(last_fd);
