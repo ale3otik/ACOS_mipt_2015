@@ -6,12 +6,26 @@
 #include <pthread.h>
 #include <time.h>
 
+#define N 100
+
 const int P = 100;
-const int N = 100;
+
 static pthread_mutex_t mutex;
 static pthread_cond_t cond;
 
-int matrix[N][N];
+/* Здесть всё плохо:
+ *
+ *
+ * Variably modified array at file scope
+ *
+ *
+ * The reason for this warning is that const in c 
+ * doesn't mean constant. It means "read only". 
+ * So the value is stored at a memory address and 
+ * could potentially be changed by machine code.
+ */
+static int matrix[N][N];
+
 int count_sync = 0;
 int count_game = 0;
 int game_is_exit = 0;

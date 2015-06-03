@@ -1,7 +1,12 @@
+
+#include <sys/wait.h>
 #include <unistd.h>
+
 #include <stdio.h>
 #include <signal.h>
 #include <stdlib.h>
+
+
 
 pid_t get_grandson_pid[2] = {-1,-1};
 pid_t brothers[2] = {-1,-1};
@@ -27,8 +32,20 @@ int main()
 	int i;
 	int pipe_fd[2];
 	struct sigaction action;
+    sigset_t sigset;
+
+    sigemptyset(&sigset);
+
+    /*!!!
+     *  Чего-это за подчёркивания такие!
+     *
+     *  переделываю на нормальное состояние.
+     */
+    /*
 	action.__sigaction_u.__sa_sigaction = action_signal;
-	action.sa_mask = 0;
+    */
+    action.sa_sigaction = action_signal;
+	action.sa_mask = sigset;
 	action.sa_flags = 0;
 	sigaction(SIGUSR1 , &action , NULL); 
 
