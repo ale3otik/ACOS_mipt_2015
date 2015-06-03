@@ -27,6 +27,7 @@ void hand_signal(int sig)
 		}
 		is_processes_killed_by_signal = 1;
 		kill(main_pid,SIGCHLD);
+		signal(sig,hand_signal);
 		return;
 	}
 	else
@@ -193,8 +194,8 @@ void create_pipe_sequence(int tasks_quantity)
 				}
 			}
 
-			if(i > 0) dup2(pipe_fileds[i].id[0],0);
-			if(i < tasks_quantity - 1) dup2(pipe_fileds[i+1].id[1],1);
+			if(i > 0) dup2(pipe_fileds[i-1].id[0],0);
+			if(i < tasks_quantity - 1) dup2(pipe_fileds[i].id[1],1);
 			errcheck(cur_program , NULL);
 			
 			fprintf(stderr, " >%d<\n", id);
@@ -215,13 +216,14 @@ void create_pipe_sequence(int tasks_quantity)
 
 	for(i = 0; i < tasks_quantity; ++i) 
 	{
-		if(is_processes_killed_by_signal)
+		/*if(is_processes_killed_by_signal)
 		{
 			is_processes_killed_by_signal = 0;
 			break;
-		}
+		}*/
 		wait(NULL);
 	}
+	is_processes_killed_by_signal = 0;
 	free(pipe_fileds);
 	
 	cur_program = start_program;
