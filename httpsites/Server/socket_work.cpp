@@ -30,7 +30,7 @@ int make_socket()
 	if(bind(socket_id,(struct sockaddr *)&server_address,sizeof(struct sockaddr_in)))
 	{
 		cerr<<"ERROR: can't bind socket " << __LINE__;
-		 exit(1);
+		exit(1);
 	}
 	// succes 
 	listen(socket_id,30);

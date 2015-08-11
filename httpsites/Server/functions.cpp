@@ -136,11 +136,9 @@ void process_query(stringstream & answer_full,const char * buf,const int result)
 	
 	if(query_type == GET)
 	{
-		cerr<<"GET"<<endl;
 			int fd;
 			if(asking_file_name == "/")
 			{
-				cerr<<"empty"<<endl;
 				fd = open(STANDART_START_PAGE,O_RDONLY);
 			}
 			else 
@@ -152,16 +150,10 @@ void process_query(stringstream & answer_full,const char * buf,const int result)
 			{
 				string answer_body_string = "";
 				is_succes_query = true;
-				cerr<<"OLALA"<<endl;
 				streams_copy(answer_body_string,fd);
 				close(fd);
 				answer_body<<answer_body_string;
 			}
-			else
-			{
-				cerr<<"СANT OPEN FILE\n";
-			}
-			cerr<<"|"<<asking_file_name<<"|"<<endl;
 	}
 	else if(query_type == POST)
 	{
@@ -172,7 +164,11 @@ void process_query(stringstream & answer_full,const char * buf,const int result)
 	}
 
 	if(is_succes_query) answer_head << "HTTP/1.1 200 OK\r\n";
-	else answer_head << "HTTP/1.1 404 Not Found\r\n";
+	else 
+	{
+		answer_head << "HTTP/1.1 404 Not Found\r\n";
+		answer_body.clear();
+	}
 		answer_head << "Version: HTTP/1.1\r\n"
         	<< "Content-Type: text/html; charset=utf-8\r\n"
 			//<< "Set-Cookie: id=10\r\n"
