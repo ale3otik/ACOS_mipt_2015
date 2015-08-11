@@ -82,10 +82,13 @@ int main()
 	#endif
 
 	chdir("../Pages");
+	if(fork()) return 0;
 	#ifdef _HIDE_SERVER_ 
 		close(0); close(1); close(2);
+		pid_t pid = getpid();
+		setpgid(pid,pid);
+		//tcsetpgrp(0 /* stdin */,0);
 	#endif
-	
 	struct sockaddr_in tmp_addr;
 	int tmp_fd;
 	socklen_t len;
