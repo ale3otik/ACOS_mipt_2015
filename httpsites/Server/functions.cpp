@@ -63,7 +63,6 @@ int get_config_int_options(const string & options_name, bool & error_state)
 
 bool path_warning_detected(const string & path)
 {
-
 	if(path.length() == 0) return false;
 	//if(path[0] == '/') return true;
 	for(int i = 0; i < path.length()-1;++i)
