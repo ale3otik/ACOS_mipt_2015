@@ -1,9 +1,9 @@
 
 window.onerror = function(msg, url, line) {
-if (onerror.num++ < onerror.max) {
-alert("ERROR: " + msg + "\n" + url + ":" + line);
-return true;
-}
+	if (onerror.num++ < onerror.max) {
+	alert("ERROR: " + msg + "\n" + url + ":" + line);
+	return true;
+	}
 }
 	var TIMER_DELAY = 100;
 	var KEY_UP = 38;
@@ -17,20 +17,21 @@ return true;
   		var start = performance.now();
 
   		requestAnimationFrame(function animate(time) {
-    	// timeFraction от 0 до 1
-    	var timeFraction = (time - start) / options.duration;
-    	if (timeFraction > 1) timeFraction = 1;
+    		// timeFraction от 0 до 1
+    		var timeFraction = (time - start) / options.duration;
+    		if (timeFraction > 1) timeFraction = 1;
 
-    	// текущее состояние анимации
-    	var progress = options.timing(timeFraction)
+    		// 	текущее состояние анимации
+    		var progress = options.timing(timeFraction)
 
-    	options.draw(progress);
+    		options.draw(progress);
 
-    	if (timeFraction < 1) {
-      	requestAnimationFrame(animate);
-    	} 
+    		if (timeFraction < 1) {
+      			requestAnimationFrame(animate);
+    		} 
     	});
 	}
+	
 	function startGame(game)
 	{		
 
@@ -61,13 +62,15 @@ return true;
 		var apple = new Object();
 		
 		apple.index = {x: -1, y:-1};
-		apple.color = "#AA1111";
+		// apple.color = "#AA1111";
 		apple.game = game;
+		apple.colors = ["rgb(255,69,0)","#00bfff","#7f3fbf","#ff4719", "#f5c000", "#42ff49"];
 		apple.drawApple = function()
 		{
 			var coord = this.game.getCoord(this.index);
 			var context = game.context;
-			context.fillStyle = "rgb(255,69,0)";
+			var color = Math.floor(Math.random() * (apple.colors.length));
+			context.fillStyle = apple.colors[color];
 			context.strokeStyle = "black";
 			context.lineWidth = 1;
 
@@ -90,8 +93,17 @@ return true;
 			
 
 			context.beginPath();
-			context.moveTo(coord.x, coord.y - (this.game.cell_size/2 - this.game.cell_border_size) + Math.floor(this.game.cell_size/4)); 
-			context.lineTo(coord.x + (Math.floor(this.game.cell_size/4) - this.game.cell_border_size),coord.y - (this.game.cell_size/2 - this.game.cell_border_size));
+			context.moveTo(coord.x, coord.y 
+						- (this.game.cell_size/2 - this.game.cell_border_size)
+						+ Math.floor(this.game.cell_size/4)); 
+		
+			context.lineTo(coord.x 
+						+ (Math.floor(this.game.cell_size/4)
+						- this.game.cell_border_size),
+						coord.y
+						- (this.game.cell_size/2 
+						- this.game.cell_border_size));
+
 			context.closePath();
 			context.stroke();
 
@@ -104,8 +116,8 @@ return true;
 			{
 					do
 					{
-						this.index.x = Math.floor(Math.random()* this.game.x_cells_quantity);
-						this.index.y = Math.floor(Math.random()* this.game.y_cells_quantity);	
+						this.index.x = Math.floor(Math.random() * this.game.x_cells_quantity);
+						this.index.y = Math.floor(Math.random() * this.game.y_cells_quantity);	
 						if(this.index.x == this.game.x_cells_quantity) --this.index.x;
 						if(this.index.y == this.game.y_cells_quantity) --this.index.y;
 
@@ -126,10 +138,8 @@ return true;
 				this.index.x = free_cells[rand][0];
 				this.index.y = free_cells[rand][1];
 			}
-
 			this.drawApple();
 		}
-
 		return apple;
 	}
 
@@ -167,7 +177,6 @@ return true;
 		new_game.tail_position = {};
 
 
-
 		new_game.fillPosition = function(index)
 		{
 			with(index)
@@ -199,8 +208,7 @@ return true;
 				if(this.cells[x] == undefined) return undefined;
 				if(this.cells[x][y] == undefined) return undefined;
 			}
-			return this.cells[index.x][index.y];
-			
+			return this.cells[index.x][index.y];	
 		}
 		
 		new_game.getCoord = function(index)
@@ -516,7 +524,7 @@ return true;
         	event = event || window.event;
         	var new_dir = [];
         	if(event.keyCode  == KEY_UP          ||
-        	 event.keyCode  == "w".charCodeAt(0) ||
+        	 event.keyCode.to  == "w".charCodeAt(0) ||
         	 event.keyCode  == 'W'.charCodeAt(0) ||
         	 event.keyCode  == 'i'.charCodeAt(0) ||
         	 event.keyCode  == 'I'.charCodeAt(0))  new_dir = [0,-1];
@@ -542,7 +550,6 @@ return true;
         			game.gameON = false;
         			game.drawText("pauseON");
         			if(game.timeoutID != undefined) window.clearTimeout(game.timeoutID);
-
         		}
         		else 
         		{ 
