@@ -1,3 +1,5 @@
+## Different programming tasks implemented with using C, POSIX, pthreads, sockets...
+
 Дорогие студенты
 
 Это репозиторий для выполнения заданий практикума.
