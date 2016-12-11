@@ -1,3 +1,5 @@
+# Moscow IPT's course of computer architecture and operation systems.
+
 ## Different programming tasks implemented with using C, POSIX, pthreads, sockets...
 
 Дорогие студенты
